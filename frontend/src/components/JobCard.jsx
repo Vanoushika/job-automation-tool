@@ -16,14 +16,23 @@ function scoreColor(score) {
 
 function timeAgo(isoStr) {
   if (!isoStr) return ''
-  const diff = Date.now() - new Date(isoStr).getTime()
+  const date = new Date(isoStr)
+  // If time is midnight UTC, it's a day-level date (SimplifyJobs) — show Today/Yesterday/Xd ago
+  const isMidnight = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0
+  const diff = Date.now() - date.getTime()
+  const days = Math.floor(diff / 86400000)
+  if (isMidnight) {
+    if (days === 0) return 'Today'
+    if (days === 1) return 'Yesterday'
+    return `${days}d ago`
+  }
+  // Exact timestamp — show precise time
   const m = Math.floor(diff / 60000)
   if (m < 1) return 'Just now'
   if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
   if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  return `${d}d ago`
+  return `${days}d ago`
 }
 
 export default function JobCard({ job, onApplied }) {
