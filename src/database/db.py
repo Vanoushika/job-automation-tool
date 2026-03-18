@@ -45,9 +45,14 @@ class JobDatabase:
         saved = 0
         for job in jobs:
             try:
+                # Never overwrite posted_date on re-runs — preserve the original posting time
+                job_without_posted = {k: v for k, v in job.items() if k != "posted_date"}
                 self._collection.update_one(
                     {"id": job["id"]},
-                    {"$set": {**job, "updated_at": datetime.now(timezone.utc).isoformat()}},
+                    {
+                        "$set": {**job_without_posted, "updated_at": datetime.now(timezone.utc).isoformat()},
+                        "$setOnInsert": {"posted_date": job.get("posted_date")},
+                    },
                     upsert=True,
                 )
                 saved += 1

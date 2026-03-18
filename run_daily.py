@@ -54,8 +54,18 @@ def run_pipeline(send_email: bool = True) -> list:
     # Print results to console
     _print_summary(top_jobs)
 
-    # Save to JSON (always — local backup)
+    # Save to JSON (always — local backup), preserving original posted_date
     output_path = Path("jobs_output.json")
+    existing_dates = {}
+    if output_path.exists():
+        try:
+            existing = json.loads(output_path.read_text())
+            existing_dates = {j["id"]: j.get("posted_date") for j in existing if j.get("id")}
+        except Exception:
+            pass
+    for job in top_jobs:
+        if job["id"] in existing_dates and existing_dates[job["id"]]:
+            job["posted_date"] = existing_dates[job["id"]]
     with open(output_path, "w") as f:
         json.dump(top_jobs, f, indent=2, default=str)
     print(f"\n[Pipeline] Saved {len(top_jobs)} jobs to {output_path}")
