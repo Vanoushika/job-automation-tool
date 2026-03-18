@@ -1,0 +1,55 @@
+Anoushika Vennamaneni
+anoushikavennamaneni@gmail.com (330) 774-2910 GitHub LinkedIn
+Full-Stack Software Engineer with 2+ years building AI-powered applications and scalable distributed systems. Expertise
+in LLM integration, vector search, RAG pipelines, Python, FastAPI, React, and cloud platforms (AWS, Azure). Delivered
+high-impact AI features optimizing semantic retrieval and maintaining 99% system uptime.
+Skills
+Languages: Python, Java, JavaScript, TypeScript
+AI/ML: LLM Integration (Groq, OpenAI), Vector Search (Pinecone), RAG Pipelines, Semantic Retrieval, Prompt Engineering
+Frameworks & Libraries: FastAPI, Flask, Django, Spring Boot, React.js, Node.js, Nest.js
+Databases: PostgreSQL, MongoDB, Cassandra, DynamoDB, Redis, Vector DBs (Pinecone)
+Tools & Cloud: Docker, Kubernetes, Git, GitHub Actions, Jenkins, AWS (EKS, Lambda, S3), Azure, Kafka
+Concepts: REST APIs, GraphQL, Microservices, Event-driven Architecture, CI/CD, JWT Authentication, System Design.
+Work Experience
+Youngstown State University, Ohio, USA Jan 2024 - May 2025
+Graduate Assistant
+• Integrated LLM features using Groq API and Pinecone vector search into scalable FastAPI backend, improving
+semantic retrieval by 25% for internal knowledge management system serving 60+ users.
+• Optimized PostgreSQL and MongoDB queries by creating compound indexes for analytics workloads, reducing API
+response latency by 60%.
+• Engineered React and FastAPI internal tools with JWT authentication and WebSocket real-time notifications, improving
+workflow response time by 30% for 60+ users.
+• Deployed containerized services using Docker and Kubernetes on AWS EKS with GitHub Actions CI/CD, reducing
+deployment time by 40%.
+Capgemini, Hyderabad, India Dec 2022 – Dec 2023
+Software Engineer
+• Designed Spring Boot REST APIs with Redis caching for customer onboarding platform, increasing system throughput
+by 40% and supporting 10K+ daily transactions.
+• Created async data pipelines using Kafka and MongoDB for real-time order processing, reducing processing delays
+by 22% and improving data consistency.
+• Implemented full-stack features using Java, Spring Boot, and React for internal workflow automation tools, reducing
+manual processing time by 30%.
+• Managed Docker and Kubernetes deployments on AWS, implementing Jenkins CI/CD pipelines that accelerated
+release cycles by 20%.
+Amdocs, Noida, India Mar 2022 – Jun 2022
+Software Engineer Intern
+• Built FastAPI and Flask REST APIs for telecom billing platform, improving API response time by 22% through query
+optimization and caching.
+• Optimized PostgreSQL queries and database schema for reporting workflows, reducing data-related defects by 15%.
+• Containerized Python services with Docker and CI/CD pipelines, accelerating deployment speed by 40%.
+Education
+Youngstown State University, OH, USA Master of Science in Computer Science Vignan’s Institute of Management, India Bachelor of Technology - ECE Project Work
+Jan 2024 - Dec 2025
+GPA: 4.0/4.0
+2019 - 2023
+GPA: 3.8/4.0
+• AI Meeting Assistant: Developed production-grade meeting transcription platform using FastAPI, React, and Groq AI
+with Whisper for real-time audio transcription and Llama 3.3 for intelligent summarization. Deployed on Render/Vercel
+with 99% uptime.
+• AI C++ Code Reviewer: Engineered Python/C++ static analysis with LLM-based scoring achieving 92% accuracy.
+Created React interface reducing manual review time by 40%.
+• FinTrack NLP: Built financial sentiment analysis platform using NLP and machine learning to analyze market trends.
+Achieved 85% sentiment classification accuracy across 10K+ financial documents with real-time data processing.
+Certifications & Awards
+• Certified AWS Cloud Practitioner • Certified AWS Developer – Associate
+• Badge for Strategic Thinking (Capgemini): Awarded for building scalable solutions under tight timelines.

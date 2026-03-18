@@ -1,0 +1,117 @@
+import requests
+from datetime import datetime, timezone
+from typing import List, Dict
+import os
+from .base import BaseScraper
+
+
+class AdzunaScraper(BaseScraper):
+    """
+    Free API — needs ADZUNA_APP_ID + ADZUNA_APP_KEY (free signup at adzuna.com).
+    250 requests/day on free tier. Searches real US job postings.
+    Sign up: https://developer.adzuna.com/
+    """
+    source_name = "Adzuna"
+    BASE_URL = "https://api.adzuna.com/v1/api/jobs/us/search"
+
+    # Full-time entry-level searches
+    FT_SEARCHES = [
+        "software engineer entry level",
+        "backend engineer new grad",
+        "software developer junior",
+        "full stack engineer entry level",
+        "python developer entry level",
+    ]
+
+    # W2 contract searches (search term signals contract intent)
+    CONTRACT_SEARCHES = [
+        "software engineer contract",
+        "python developer contract",
+        "full stack developer contract",
+        "java developer contract",
+        "react developer contract",
+    ]
+
+    def __init__(self):
+        self.app_id = os.getenv("ADZUNA_APP_ID", "")
+        self.app_key = os.getenv("ADZUNA_APP_KEY", "")
+
+    def fetch_jobs(self) -> List[Dict]:
+        if not self.app_id or not self.app_key:
+            print("[Adzuna] Skipped — ADZUNA_APP_ID / ADZUNA_APP_KEY not set")
+            return []
+
+        print("[Adzuna] Fetching...")
+        jobs = []
+        seen_ids = set()
+
+        searches = (
+            [(q, False) for q in self.FT_SEARCHES] +
+            [(q, True)  for q in self.CONTRACT_SEARCHES]
+        )
+
+        for query, is_contract in searches:
+            try:
+                r = requests.get(
+                    f"{self.BASE_URL}/1",
+                    params={
+                        "app_id": self.app_id,
+                        "app_key": self.app_key,
+                        "results_per_page": 20,
+                        "what": query,
+                        "where": "United States",
+                        "max_days_old": 3,
+                    },
+                    timeout=15,
+                )
+                r.raise_for_status()
+                for item in r.json().get("results", []):
+                    item_id = item.get("id")
+                    if item_id in seen_ids:
+                        continue
+                    seen_ids.add(item_id)
+                    job = self._transform(item, is_contract)
+                    if job:
+                        jobs.append(job)
+            except Exception as e:
+                print(f"[Adzuna] Error ({query}): {e}")
+
+        ft = len([j for j in jobs if j["job_type"] == "full_time"])
+        ct = len([j for j in jobs if j["job_type"] == "contract"])
+        print(f"[Adzuna] Found {len(jobs)} jobs ({ft} full-time, {ct} contract)")
+        return jobs
+
+    def _transform(self, item: Dict, is_contract: bool = False) -> Dict:
+        try:
+            company = item.get("company", {}).get("display_name", "")
+            role = item.get("title", "")
+            location = item.get("location", {}).get("display_name", "")
+            apply_url = item.get("redirect_url", "")
+            description = item.get("description", "")[:4000]
+            posted_date = self._parse_date(item.get("created", ""))
+
+            # Adzuna returns contract_type field; also use search intent
+            contract_type = (item.get("contract_type") or "").lower()
+            job_type = "contract" if (is_contract or "contract" in contract_type) else "full_time"
+
+            if not company or not role or not apply_url:
+                return None
+
+            return self._make_job(
+                company=company,
+                role=role,
+                location=location,
+                apply_url=apply_url,
+                description=description,
+                posted_date=posted_date,
+                job_type=job_type,
+            )
+        except Exception as e:
+            print(f"[Adzuna] Transform error: {e}")
+            return None
+
+    def _parse_date(self, date_str: str) -> datetime:
+        try:
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+        except Exception:
+            return datetime.now(timezone.utc)
