@@ -115,12 +115,14 @@ class SimplifyScraper(BaseScraper):
         Returns UTC datetime.
         """
         now = datetime.now(timezone.utc)
+        # Use start of day (midnight UTC) so jobs don't reset their time each pipeline run
+        today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
         age_str = age_str.strip().lower()
 
         m = re.match(r"(\d+)d", age_str)
         if m:
             days = int(m.group(1))
-            return now - timedelta(days=days)
+            return today_midnight - timedelta(days=days)
 
         # Also handle hour format if it ever appears: '3h'
         m = re.match(r"(\d+)h", age_str)
