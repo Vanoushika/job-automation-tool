@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '' }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'score' }
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
@@ -37,8 +37,14 @@ export default function App() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // Client-side filtering on top of already-sorted data from API
-  const filtered = jobs.filter(j => {
+  // Auto-refresh every 10 minutes to catch new jobs from hourly pipeline
+  useEffect(() => {
+    const interval = setInterval(fetchAll, 10 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [fetchAll])
+
+  // Client-side filtering
+  let filtered = jobs.filter(j => {
     if (filters.tier !== 'all' && j.tier !== filters.tier) return false
     if (filters.jobType !== 'all' && j.job_type !== filters.jobType) return false
     if (filters.appliedOnly && !j.applied) return false
@@ -46,8 +52,21 @@ export default function App() {
       const q = filters.search.toLowerCase()
       if (!j.company?.toLowerCase().includes(q) && !j.role?.toLowerCase().includes(q)) return false
     }
+    if (filters.postedWithin !== 'all') {
+      const cutoff = Date.now() - parseInt(filters.postedWithin) * 3600000
+      if (!j.posted_date || new Date(j.posted_date).getTime() < cutoff) return false
+    }
     return true
   })
+
+  // Sort
+  if (filters.sortBy === 'newest') {
+    filtered = [...filtered].sort((a, b) => {
+      const ta = a.posted_date ? new Date(a.posted_date).getTime() : 0
+      const tb = b.posted_date ? new Date(b.posted_date).getTime() : 0
+      return tb - ta
+    })
+  }
 
   // Group by tier for display
   const grouped = TIER_ORDER.reduce((acc, t) => {

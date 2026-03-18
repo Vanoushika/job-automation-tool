@@ -5,6 +5,18 @@ export default function FilterBar({ filters, setFilters }) {
     { value: 'full_time', label: 'Full-Time' },
     { value: 'contract',  label: 'W2 / Contract' },
   ]
+  const postedOptions = [
+    { value: 'all', label: 'Any Time' },
+    { value: '1',   label: 'Last 1h' },
+    { value: '3',   label: 'Last 3h' },
+    { value: '6',   label: 'Last 6h' },
+    { value: '12',  label: 'Last 12h' },
+    { value: '24',  label: 'Today' },
+  ]
+  const sortOptions = [
+    { value: 'score',  label: 'Best Match' },
+    { value: 'newest', label: 'Newest First' },
+  ]
 
   return (
     <div className="flex flex-wrap gap-3 mb-6 items-center">
@@ -46,6 +58,40 @@ export default function FilterBar({ filters, setFilters }) {
             }`}
           >
             {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Posted within filter */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        {postedOptions.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => setFilters(f => ({ ...f, postedWithin: o.value }))}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+              filters.postedWithin === o.value
+                ? 'bg-orange-500 text-white'
+                : 'text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Sort */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+        {sortOptions.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => setFilters(f => ({ ...f, sortBy: o.value }))}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+              filters.sortBy === o.value
+                ? 'bg-teal-500 text-white'
+                : 'text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {o.label}
           </button>
         ))}
       </div>
