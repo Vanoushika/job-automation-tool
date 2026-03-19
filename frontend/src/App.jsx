@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest' }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: false }
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
@@ -56,6 +56,7 @@ export default function App() {
       const cutoff = Date.now() - parseInt(filters.postedWithin) * 3600000
       if (!j.posted_date || new Date(j.posted_date).getTime() < cutoff) return false
     }
+    if (filters.newOnly && !j.is_new) return false
     return true
   })
 
@@ -137,6 +138,22 @@ export default function App() {
             {error}
           </div>
         )}
+
+        {/* New jobs banner */}
+        {!loading && (() => {
+          const newCount = jobs.filter(j => j.is_new).length
+          return newCount > 0 ? (
+            <div
+              className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-red-100 transition"
+              onClick={() => setFilters(f => ({ ...f, newOnly: true }))}
+            >
+              <span className="text-red-700 font-semibold text-sm">
+                🆕 {newCount} new job{newCount !== 1 ? 's' : ''} since last check — click to view
+              </span>
+              <span className="text-red-400 text-xs">Click to filter</span>
+            </div>
+          ) : null
+        })()}
 
         {/* Stats */}
         {!loading && <StatsBar stats={stats} />}

@@ -96,6 +96,18 @@ export default function FilterBar({ filters, setFilters }) {
         ))}
       </div>
 
+      {/* New Only toggle */}
+      <button
+        onClick={() => setFilters(f => ({ ...f, newOnly: !f.newOnly }))}
+        className={`px-3 py-1 rounded-lg text-sm font-semibold border transition-all ${
+          filters.newOnly
+            ? 'bg-red-500 text-white border-red-500'
+            : 'text-red-600 border-red-300 hover:bg-red-50'
+        }`}
+      >
+        🆕 New Only
+      </button>
+
       {/* Applied toggle */}
       <button
         onClick={() => setFilters(f => ({ ...f, appliedOnly: !f.appliedOnly }))}
