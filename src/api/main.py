@@ -1,9 +1,12 @@
 import json
+import base64
 import subprocess
 import sys
+import os
 from pathlib import Path
 from typing import Optional
 
+import requests as http_requests
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -22,6 +25,9 @@ app.add_middleware(
 )
 
 JOBS_FILE = Path("jobs_output.json")
+GITHUB_PAT   = os.getenv("GITHUB_PAT", "")
+GITHUB_REPO  = "Vanoushika/job-automation-tool"
+GITHUB_BRANCH = "data"
 db = JobDatabase()
 
 
@@ -33,6 +39,30 @@ def load_jobs_json() -> list:
     with open(JOBS_FILE) as f:
         data = json.load(f)
     return data if isinstance(data, list) else []
+
+
+def fetch_jobs_from_github() -> list:
+    """Fetch latest jobs from GitHub data branch (fallback when local file is missing)."""
+    if not GITHUB_PAT:
+        return []
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/jobs_output.json?ref={GITHUB_BRANCH}"
+        r = http_requests.get(url, headers={"Authorization": f"token {GITHUB_PAT}"}, timeout=15)
+        if r.status_code == 200:
+            content = base64.b64decode(r.json()["content"]).decode()
+            jobs = json.loads(content)
+            # Preserve applied status from local cache
+            local = {j["id"]: j for j in load_jobs_json()}
+            for job in jobs:
+                if local.get(job["id"], {}).get("applied"):
+                    job["applied"] = True
+            save_jobs_json(jobs)
+            print(f"[API] Loaded {len(jobs)} jobs from GitHub data branch")
+            return jobs
+        print(f"[API] GitHub fetch returned {r.status_code}")
+    except Exception as e:
+        print(f"[API] GitHub fetch failed: {e}")
+    return []
 
 
 def save_jobs_json(jobs: list):
@@ -48,6 +78,8 @@ def get_jobs_source(
         return db.get_jobs(tier=tier, job_type=job_type, applied=applied, search=search)
 
     jobs = load_jobs_json()
+    if not jobs:
+        jobs = fetch_jobs_from_github()
     if tier and tier != "all":
         jobs = [j for j in jobs if j.get("tier") == tier.upper()]
     if job_type and job_type != "all":

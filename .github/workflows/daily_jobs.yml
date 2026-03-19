@@ -6,17 +6,42 @@ on:
   workflow_dispatch:              # allow manual trigger from GitHub UI
 
 jobs:
-  trigger-pipeline:
+  run-pipeline:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wake up Render (free tier sleeps after inactivity)
-        run: curl -s https://job-automation-tool-i29m.onrender.com/health
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Wait for Render to wake up
-        run: sleep 40
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Trigger pipeline on Render
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create resume files
         run: |
-          curl -s -X POST https://job-automation-tool-i29m.onrender.com/api/run
-          echo "Pipeline triggered on Render successfully"
+          mkdir -p data/resumes
+          echo "${{ secrets.RESUME_AI }}"        > data/resumes/resume_ai.txt
+          echo "${{ secrets.RESUME_FULLSTACK }}" > data/resumes/resume_fullstack.txt
+
+      - name: Run pipeline
+        env:
+          GROQ_API_KEY:  ${{ secrets.GROQ_API_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: python run_daily.py --no-email
+
+      - name: Push jobs to data branch
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git fetch origin
+          git checkout --orphan data-tmp
+          git reset --hard
+          cp jobs_output.json jobs_output.json
+          git add jobs_output.json
+          git commit -m "Jobs update $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push origin HEAD:data --force
