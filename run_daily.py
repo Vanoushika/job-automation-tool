@@ -9,7 +9,11 @@ Usage:
 import json
 import sys
 import argparse
-from datetime import datetime
+import base64
+import os
+import urllib.request
+import urllib.error
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from src.utils.config import (
@@ -20,6 +24,30 @@ from src.utils.config import (
 )
 from src.scrapers.aggregator import JobAggregator
 from src.scoring.ats_scorer import ATSScorer
+
+
+def fetch_existing_jobs() -> dict:
+    """Fetch previously seen jobs from GitHub data branch. Returns dict keyed by job id."""
+    token = os.getenv("GITHUB_TOKEN", "")
+    if not token:
+        # Fall back to local file
+        path = Path("jobs_output.json")
+        if path.exists():
+            try:
+                jobs = json.loads(path.read_text())
+                return {j["id"]: j for j in jobs if j.get("id")}
+            except Exception:
+                pass
+        return {}
+    try:
+        url = "https://api.github.com/repos/Vanoushika/job-automation-tool/contents/jobs_output.json?ref=data"
+        req = urllib.request.Request(url, headers={"Authorization": f"token {token}"})
+        with urllib.request.urlopen(req) as r:
+            content = base64.b64decode(json.load(r)["content"]).decode()
+            jobs = json.loads(content)
+            return {j["id"]: j for j in jobs if j.get("id")}
+    except Exception:
+        return {}
 
 
 def run_pipeline(send_email: bool = True) -> list:
@@ -54,21 +82,30 @@ def run_pipeline(send_email: bool = True) -> list:
     # Print results to console
     _print_summary(top_jobs)
 
-    # Save to JSON (always — local backup), preserving original posted_date
-    output_path = Path("jobs_output.json")
-    existing_dates = {}
-    if output_path.exists():
-        try:
-            existing = json.loads(output_path.read_text())
-            existing_dates = {j["id"]: j.get("posted_date") for j in existing if j.get("id")}
-        except Exception:
-            pass
+    # Load previously seen jobs to preserve first_seen dates and posted_dates
+    existing = fetch_existing_jobs()
+    now_iso  = datetime.now(timezone.utc).isoformat()
+    today    = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+
     for job in top_jobs:
-        if job["id"] in existing_dates and existing_dates[job["id"]]:
-            job["posted_date"] = existing_dates[job["id"]]
+        prev = existing.get(job["id"])
+        if prev:
+            # Preserve original posted_date
+            if prev.get("posted_date"):
+                job["posted_date"] = prev["posted_date"]
+            # Preserve first_seen — this job was already known
+            job["first_seen"] = prev.get("first_seen", prev.get("posted_date", now_iso))
+            job["is_new"] = False
+        else:
+            # Brand new job — first time we're seeing it
+            job["first_seen"] = now_iso
+            job["is_new"] = True
+
+    output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
         json.dump(top_jobs, f, indent=2, default=str)
-    print(f"\n[Pipeline] Saved {len(top_jobs)} jobs to {output_path}")
+    new_count = sum(1 for j in top_jobs if j.get("is_new"))
+    print(f"\n[Pipeline] Saved {len(top_jobs)} jobs ({new_count} new) to {output_path}")
 
     # Save to MongoDB (when MONGODB_URI is set)
     try:

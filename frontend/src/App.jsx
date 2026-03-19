@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'score' }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest' }
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
@@ -62,8 +62,8 @@ export default function App() {
   // Sort
   if (filters.sortBy === 'newest') {
     filtered = [...filtered].sort((a, b) => {
-      const ta = a.posted_date ? new Date(a.posted_date).getTime() : 0
-      const tb = b.posted_date ? new Date(b.posted_date).getTime() : 0
+      const ta = a.first_seen ? new Date(a.first_seen).getTime() : 0
+      const tb = b.first_seen ? new Date(b.first_seen).getTime() : 0
       return tb - ta
     })
   }

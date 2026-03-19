@@ -63,6 +63,13 @@ export default function JobCard({ job, onApplied }) {
               {styles.icon} Tier {tier}
             </span>
 
+            {/* New badge */}
+            {job.is_new && (
+              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                🆕 New
+              </span>
+            )}
+
             {/* Applied badge */}
             {job.applied && (
               <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
