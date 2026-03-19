@@ -20,3 +20,4 @@ groq>=0.9.0
 
 # Scheduler
 apscheduler==3.10.4
+certifi

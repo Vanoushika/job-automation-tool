@@ -1,4 +1,5 @@
 import os
+import certifi
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from pymongo import MongoClient, DESCENDING
@@ -18,7 +19,7 @@ class JobDatabase:
 
         if uri and uri != "mongodb+srv://user:pass@cluster.mongodb.net/":
             try:
-                self._client = MongoClient(uri, serverSelectionTimeoutMS=5000, tls=True, tlsAllowInvalidCertificates=True)
+                self._client = MongoClient(uri, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
                 self._client.admin.command("ping")
                 db = self._client["job_automation"]
                 self._collection = db["jobs"]
