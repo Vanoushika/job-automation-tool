@@ -38,10 +38,11 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+          cp jobs_output.json /tmp/jobs_output.json
           git fetch origin
           git checkout --orphan data-tmp
           git reset --hard
-          cp jobs_output.json jobs_output.json
+          cp /tmp/jobs_output.json jobs_output.json
           git add jobs_output.json
           git commit -m "Jobs update $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push origin HEAD:data --force
