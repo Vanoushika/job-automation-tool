@@ -6,34 +6,17 @@ on:
   workflow_dispatch:              # allow manual trigger from GitHub UI
 
 jobs:
-  run-pipeline:
+  trigger-pipeline:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Wake up Render (free tier sleeps after inactivity)
+        run: curl -s https://job-automation-tool-i29m.onrender.com/health
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+      - name: Wait for Render to wake up
+        run: sleep 40
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Create resume files
+      - name: Trigger pipeline on Render
         run: |
-          mkdir -p data/resumes
-          echo "${{ secrets.RESUME_AI }}"       > data/resumes/resume_ai.txt
-          echo "${{ secrets.RESUME_FULLSTACK }}" > data/resumes/resume_fullstack.txt
-
-      - name: Run pipeline
-        env:
-          GROQ_API_KEY:        ${{ secrets.GROQ_API_KEY }}
-          MONGODB_URI:         ${{ secrets.MONGODB_URI }}
-          ADZUNA_APP_ID:       ${{ secrets.ADZUNA_APP_ID }}
-          ADZUNA_APP_KEY:      ${{ secrets.ADZUNA_APP_KEY }}
-          GMAIL_USER:          ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD:  ${{ secrets.GMAIL_APP_PASSWORD }}
-          NOTIFY_EMAIL:        ${{ secrets.NOTIFY_EMAIL }}
-        run: python run_daily.py
+          curl -s -X POST https://job-automation-tool-i29m.onrender.com/api/run
+          echo "Pipeline triggered on Render successfully"
