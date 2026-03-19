@@ -14,13 +14,18 @@ class AdzunaScraper(BaseScraper):
     source_name = "Adzuna"
     BASE_URL = "https://api.adzuna.com/v1/api/jobs/us/search"
 
-    # Full-time entry-level searches
+    # Full-time entry-level searches (max_days_old=1 — today only)
     FT_SEARCHES = [
         "software engineer entry level",
         "backend engineer new grad",
         "software developer junior",
         "full stack engineer entry level",
         "python developer entry level",
+        "frontend engineer entry level",
+        "react developer new grad",
+        "machine learning engineer entry level",
+        "data engineer entry level",
+        "android developer entry level",
     ]
 
     # W2 contract searches (search term signals contract intent)
@@ -46,11 +51,11 @@ class AdzunaScraper(BaseScraper):
         seen_ids = set()
 
         searches = (
-            [(q, False) for q in self.FT_SEARCHES] +
-            [(q, True)  for q in self.CONTRACT_SEARCHES]
+            [(q, False, 1) for q in self.FT_SEARCHES] +
+            [(q, True,  2) for q in self.CONTRACT_SEARCHES]
         )
 
-        for query, is_contract in searches:
+        for query, is_contract, max_days in searches:
             try:
                 r = requests.get(
                     f"{self.BASE_URL}/1",
@@ -60,7 +65,7 @@ class AdzunaScraper(BaseScraper):
                         "results_per_page": 20,
                         "what": query,
                         "where": "United States",
-                        "max_days_old": 3,
+                        "max_days_old": max_days,
                     },
                     timeout=15,
                 )
