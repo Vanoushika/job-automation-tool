@@ -79,13 +79,38 @@ def run_pipeline(send_email: bool = True) -> list:
         print("\n[Pipeline] No jobs found today. Try again later.")
         return []
 
-    # Print results to console
-    _print_summary(top_jobs)
-
     # Load previously seen jobs to preserve first_seen dates and posted_dates
     existing = fetch_existing_jobs()
     now_iso  = datetime.now(timezone.utc).isoformat()
     now      = datetime.now(timezone.utc)
+
+    # Drop jobs we've been showing for more than 2 days — they're stale
+    two_days_ago = now - timedelta(days=2)
+    fresh_jobs = []
+    stale_count = 0
+    for job in top_jobs:
+        prev = existing.get(job["id"])
+        if prev:
+            try:
+                fs = datetime.fromisoformat(prev.get("first_seen", now_iso))
+                if fs.tzinfo is None:
+                    fs = fs.replace(tzinfo=timezone.utc)
+                if fs < two_days_ago:
+                    stale_count += 1
+                    continue
+            except Exception:
+                pass
+        fresh_jobs.append(job)
+    top_jobs = fresh_jobs
+    if stale_count:
+        print(f"[Pipeline] Dropped {stale_count} stale jobs (seen 2+ days ago) → {len(top_jobs)} remaining")
+
+    if not top_jobs:
+        print("\n[Pipeline] No fresh jobs found today. Try again later.")
+        return []
+
+    # Print results to console
+    _print_summary(top_jobs)
 
     def _is_recently_posted(posted_date_str: str, hours: int = 48) -> bool:
         """True if the job was posted within the last N hours."""
