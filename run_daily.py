@@ -140,10 +140,10 @@ def run_pipeline(send_email: bool = True) -> list:
         # This is the only reliable signal — SimplifyJobs always fakes "posted today"
         job["is_new"] = prev is None
 
-        # SimplifyJobs fakes "0d" (today) for all jobs — use first_seen as the
-        # displayed timestamp so the card shows "Xh ago" not "Today" for old jobs
+        # SimplifyJobs has no real timestamps — hide the clock entirely
+        # so every timestamp shown on the dashboard is trustworthy
         if job.get("source") == "SimplifyJobs":
-            job["posted_date"] = job["first_seen"]
+            job["posted_date"] = None
 
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
