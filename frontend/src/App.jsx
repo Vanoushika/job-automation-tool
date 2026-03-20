@@ -16,6 +16,10 @@ export default function App() {
   const [running, setRunning] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(null)
   const [error, setError] = useState(null)
+  const [hiddenIds, setHiddenIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('hiddenJobs') || '[]')) }
+    catch { return new Set() }
+  })
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -44,7 +48,7 @@ export default function App() {
   }, [fetchAll])
 
   // Client-side filtering
-  let filtered = jobs.filter(j => {
+  let filtered = jobs.filter(j => !hiddenIds.has(j.id)).filter(j => {
     if (filters.tier !== 'all' && j.tier !== filters.tier) return false
     if (filters.jobType !== 'all' && j.job_type !== filters.jobType) return false
     if (filters.appliedOnly && !j.applied) return false
@@ -79,6 +83,15 @@ export default function App() {
   function handleApplied(jobId) {
     setJobs(prev => prev.map(j => j.id === jobId ? { ...j, applied: true } : j))
     setStats(prev => ({ ...prev, applied: (prev.applied || 0) + 1 }))
+  }
+
+  function handleHide(jobId) {
+    setHiddenIds(prev => {
+      const next = new Set(prev)
+      next.add(jobId)
+      localStorage.setItem('hiddenJobs', JSON.stringify([...next]))
+      return next
+    })
   }
 
   async function triggerRun() {
@@ -201,7 +214,7 @@ export default function App() {
               </div>
               <div className="flex flex-col gap-3">
                 {tierJobs.map(job => (
-                  <JobCard key={job.id} job={job} onApplied={handleApplied} />
+                  <JobCard key={job.id} job={job} onApplied={handleApplied} onHide={handleHide} />
                 ))}
               </div>
             </div>

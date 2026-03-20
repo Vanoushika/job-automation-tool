@@ -35,7 +35,7 @@ function timeAgo(isoStr) {
   return `${days}d ago`
 }
 
-export default function JobCard({ job, onApplied }) {
+export default function JobCard({ job, onApplied, onHide }) {
   const tier = job.tier || 'D'
   const styles = TIER_STYLES[tier] || TIER_STYLES.D
   const score = job.best_score ?? 0
@@ -91,7 +91,7 @@ export default function JobCard({ job, onApplied }) {
           </div>
         </div>
 
-        {/* Right: score + button */}
+        {/* Right: score + buttons */}
         <div className="flex flex-col items-center gap-2 shrink-0">
           <div className="text-center">
             <p className={`text-3xl font-black leading-none ${scoreColor(score)}`}>{score.toFixed(0)}%</p>
@@ -108,6 +108,14 @@ export default function JobCard({ job, onApplied }) {
             }`}
           >
             {job.applied ? 'Applied' : 'Apply Now'}
+          </button>
+
+          <button
+            onClick={() => onHide(job.id)}
+            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+            title="Hide this job"
+          >
+            ✕ Hide
           </button>
         </div>
       </div>
