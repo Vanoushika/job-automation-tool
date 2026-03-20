@@ -15,16 +15,27 @@ class JoobleScraper(BaseScraper):
     BASE_URL = "https://jooble.org/api"
 
     SEARCHES = [
+        # Role-level searches
         "software engineer new grad",
         "software engineer entry level",
+        "full stack engineer entry level",
         "backend engineer new grad",
         "frontend engineer entry level",
-        "full stack engineer entry level",
+        # Tech-stack specific — higher ATS scores since keywords are in title
+        "React developer entry level",
+        "Python developer new grad",
+        "TypeScript developer entry level",
+        "Node.js developer entry level",
+        "React Node full stack new grad",
+        "Python Django developer entry level",
         "machine learning engineer new grad",
-        "data engineer entry level",
-        "python developer entry level",
-        "react developer new grad",
-        "iOS developer entry level",
+        "data engineer Python entry level",
+        "iOS Swift developer entry level",
+        "Android Kotlin developer entry level",
+        "Java developer entry level",
+        "AWS cloud engineer entry level",
+        "DevOps engineer entry level",
+        "API developer Python entry level",
     ]
 
     def __init__(self):

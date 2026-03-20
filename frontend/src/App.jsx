@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: false }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: '24', sortBy: 'newest', newOnly: false }
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
