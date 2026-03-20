@@ -3,6 +3,7 @@ import base64
 import subprocess
 import sys
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -25,10 +26,15 @@ app.add_middleware(
 )
 
 JOBS_FILE = Path("jobs_output.json")
-GITHUB_PAT   = os.getenv("GITHUB_PAT", "")
-GITHUB_REPO  = "Vanoushika/job-automation-tool"
+GITHUB_PAT    = os.getenv("GITHUB_PAT", "")
+GITHUB_REPO   = "Vanoushika/job-automation-tool"
 GITHUB_BRANCH = "data"
 db = JobDatabase()
+
+# In-memory cache so we don't hit GitHub API on every request
+_cache: list = []
+_cache_time: float = 0
+CACHE_TTL = 300  # refresh from GitHub every 5 minutes
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -70,16 +76,28 @@ def save_jobs_json(jobs: list):
         json.dump(jobs, f, indent=2, default=str)
 
 
+def get_fresh_jobs() -> list:
+    """Return jobs, syncing from GitHub every 5 minutes."""
+    global _cache, _cache_time
+    if GITHUB_PAT and (time.time() - _cache_time > CACHE_TTL):
+        jobs = fetch_jobs_from_github()
+        if jobs:
+            _cache = jobs
+            _cache_time = time.time()
+            return jobs
+    if _cache:
+        return _cache
+    return load_jobs_json()
+
+
 def get_jobs_source(
     tier=None, job_type=None, applied=None, search=None
 ) -> list:
-    """Read from MongoDB if connected, else fall back to JSON file."""
+    """Read from MongoDB if connected, else sync from GitHub data branch."""
     if db.connected:
         return db.get_jobs(tier=tier, job_type=job_type, applied=applied, search=search)
 
-    jobs = load_jobs_json()
-    if not jobs:
-        jobs = fetch_jobs_from_github()
+    jobs = get_fresh_jobs()
     if tier and tier != "all":
         jobs = [j for j in jobs if j.get("tier") == tier.upper()]
     if job_type and job_type != "all":
@@ -139,7 +157,7 @@ def get_stats():
     if db.connected:
         return db.get_stats()
 
-    jobs = load_jobs_json()
+    jobs = get_fresh_jobs()
     return {
         "total":     len(jobs),
         "tier_a":    len([j for j in jobs if j.get("tier") == "A"]),
