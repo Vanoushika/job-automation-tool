@@ -66,12 +66,12 @@ def run_pipeline(send_email: bool = True) -> list:
     scorer = ATSScorer()
     aggregator = JobAggregator()
 
-    # Full pipeline: scrape → dedupe → filter → score → 50 FT + 20 W2
+    # Full pipeline: scrape → dedupe → filter → score → 100 FT + 20 W2
     top_jobs = aggregator.pipeline(
         scorer=scorer,
         resume_ai=resume_ai,
         resume_fullstack=resume_fullstack,
-        ft_target=50,
+        ft_target=100,
         contract_target=20,
     )
 
@@ -85,21 +85,33 @@ def run_pipeline(send_email: bool = True) -> list:
     # Load previously seen jobs to preserve first_seen dates and posted_dates
     existing = fetch_existing_jobs()
     now_iso  = datetime.now(timezone.utc).isoformat()
-    today    = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    now      = datetime.now(timezone.utc)
+
+    def _is_recently_posted(posted_date_str: str, hours: int = 48) -> bool:
+        """True if the job was posted within the last N hours."""
+        if not posted_date_str:
+            return False
+        try:
+            pd = datetime.fromisoformat(posted_date_str)
+            if pd.tzinfo is None:
+                pd = pd.replace(tzinfo=timezone.utc)
+            return (now - pd).total_seconds() < hours * 3600
+        except Exception:
+            return False
 
     for job in top_jobs:
         prev = existing.get(job["id"])
         if prev:
-            # Preserve original posted_date
+            # Preserve original posted_date and first_seen
             if prev.get("posted_date"):
                 job["posted_date"] = prev["posted_date"]
-            # Preserve first_seen — this job was already known
             job["first_seen"] = prev.get("first_seen", prev.get("posted_date", now_iso))
-            job["is_new"] = False
         else:
-            # Brand new job — first time we're seeing it
             job["first_seen"] = now_iso
-            job["is_new"] = True
+
+        # is_new = posted within 48h based on actual posting date
+        # This way Jooble/Adzuna jobs stay "new" all day, not just one pipeline run
+        job["is_new"] = _is_recently_posted(job.get("posted_date", ""))
 
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
