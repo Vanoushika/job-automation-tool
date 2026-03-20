@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: false }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: true }
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
@@ -170,17 +170,20 @@ export default function App() {
         {/* New jobs banner */}
         {!loading && (() => {
           const newCount = jobs.filter(j => j.is_new).length
-          return newCount > 0 ? (
-            <div
-              className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-red-100 transition"
-              onClick={() => setFilters(f => ({ ...f, newOnly: true }))}
-            >
-              <span className="text-red-700 font-semibold text-sm">
-                🆕 {newCount} new job{newCount !== 1 ? 's' : ''} since last check — click to view
+          return (
+            <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 flex items-center justify-between">
+              <span className="text-indigo-700 font-semibold text-sm">
+                🆕 {newCount} fresh job{newCount !== 1 ? 's' : ''} today
+                <span className="font-normal text-indigo-500 ml-2">· {jobs.length} total in database</span>
               </span>
-              <span className="text-red-400 text-xs">Click to filter</span>
+              <button
+                onClick={() => setFilters(f => ({ ...f, newOnly: !f.newOnly }))}
+                className="text-xs text-indigo-600 underline hover:text-indigo-800"
+              >
+                {filters.newOnly ? 'Show all jobs' : 'Show today only'}
+              </button>
             </div>
-          ) : null
+          )
         })()}
 
         {/* Stats */}

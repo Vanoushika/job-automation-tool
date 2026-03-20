@@ -136,14 +136,14 @@ def run_pipeline(send_email: bool = True) -> list:
         else:
             job["first_seen"] = now_iso
 
-        # is_new = wasn't in the previous pipeline run's output
-        # This is the only reliable signal — SimplifyJobs always fakes "posted today"
-        job["is_new"] = prev is None
-
-        # SimplifyJobs has no real timestamps — hide the clock entirely
-        # so every timestamp shown on the dashboard is trustworthy
+        # is_new per source:
+        # - SimplifyJobs: true only the FIRST time we ever see this job
+        # - Jooble/Adzuna/others: true if posted within last 24h (real timestamp)
         if job.get("source") == "SimplifyJobs":
-            job["posted_date"] = None
+            job["is_new"] = prev is None
+            job["posted_date"] = None  # no real timestamp — hide the clock
+        else:
+            job["is_new"] = _is_recently_posted(job.get("posted_date", ""), hours=24)
 
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
