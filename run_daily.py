@@ -84,24 +84,20 @@ def run_pipeline(send_email: bool = True) -> list:
     now_iso  = datetime.now(timezone.utc).isoformat()
     now      = datetime.now(timezone.utc)
 
-    # Staleness filter:
-    # - SimplifyJobs relists jobs indefinitely — drop any job we've seen before from that source
-    # - All other sources: drop jobs first seen 3+ days ago
-    three_days_ago = now - timedelta(days=3)
+    # Staleness filter: drop jobs we've been showing too long
+    # - SimplifyJobs relists same jobs for weeks → drop after 2 days
+    # - All other sources (Jooble, Adzuna, etc.) → drop after 4 days
     fresh_jobs = []
     stale_count = 0
     for job in top_jobs:
         prev = existing.get(job["id"])
         if prev:
-            if job.get("source") == "SimplifyJobs":
-                # SimplifyJobs shows same jobs forever — once seen, never show again
-                stale_count += 1
-                continue
             try:
                 fs = datetime.fromisoformat(prev.get("first_seen", now_iso))
                 if fs.tzinfo is None:
                     fs = fs.replace(tzinfo=timezone.utc)
-                if fs < three_days_ago:
+                max_age = timedelta(days=2) if job.get("source") == "SimplifyJobs" else timedelta(days=4)
+                if fs < now - max_age:
                     stale_count += 1
                     continue
             except Exception:

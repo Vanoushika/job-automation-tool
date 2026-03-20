@@ -72,7 +72,8 @@ class JoobleScraper(BaseScraper):
             role     = item.get("title", "").strip()
             location = item.get("location", "").strip()
             apply_url = item.get("link", "").strip()
-            description = item.get("snippet", "").strip()
+            snippet = item.get("snippet", "").strip()
+            description = f"{role} at {company}. {snippet}" if snippet else f"{role} at {company}"
             posted_date = self._parse_date(item.get("updated", ""))
 
             if not company or not role or not apply_url:
