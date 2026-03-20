@@ -130,4 +130,4 @@ class SimplifyScraper(BaseScraper):
             hours = int(m.group(1))
             return now - timedelta(hours=hours)
 
-        return now
+        return today_midnight
