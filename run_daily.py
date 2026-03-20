@@ -96,7 +96,7 @@ def run_pipeline(send_email: bool = True) -> list:
                 fs = datetime.fromisoformat(prev.get("first_seen", now_iso))
                 if fs.tzinfo is None:
                     fs = fs.replace(tzinfo=timezone.utc)
-                max_age = timedelta(days=2) if job.get("source") == "SimplifyJobs" else timedelta(days=4)
+                max_age = timedelta(days=1) if job.get("source") == "SimplifyJobs" else timedelta(days=4)
                 if fs < now - max_age:
                     stale_count += 1
                     continue
@@ -139,6 +139,11 @@ def run_pipeline(send_email: bool = True) -> list:
         # is_new = wasn't in the previous pipeline run's output
         # This is the only reliable signal — SimplifyJobs always fakes "posted today"
         job["is_new"] = prev is None
+
+        # SimplifyJobs fakes "0d" (today) for all jobs — use first_seen as the
+        # displayed timestamp so the card shows "Xh ago" not "Today" for old jobs
+        if job.get("source") == "SimplifyJobs":
+            job["posted_date"] = job["first_seen"]
 
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
