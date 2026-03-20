@@ -200,21 +200,39 @@ class JobAggregator:
     def get_top_jobs(
         self,
         scored_jobs: List[Dict],
-        ft_target: int = 50,
+        ft_target: int = 100,
         contract_target: int = 20,
+        per_source_cap: int = 25,
     ) -> List[Dict]:
         """
         Return top ft_target full-time jobs + top contract_target W2/contract jobs.
-        These are two independent ranked lists, not a fallback.
+        Applies a per-source cap so no single source dominates the results.
         """
         full_time, contract = self.split_by_type(scored_jobs)
 
         full_time.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
         contract.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
 
-        ft_result = full_time[:ft_target]
+        # Per-source cap: take top N per source (by score), then merge and re-sort
+        source_counts: Dict[str, int] = {}
+        ft_capped = []
+        for job in full_time:
+            src = job.get("source", "unknown")
+            if source_counts.get(src, 0) < per_source_cap:
+                ft_capped.append(job)
+                source_counts[src] = source_counts.get(src, 0) + 1
+            if len(ft_capped) >= ft_target:
+                break
+
+        ft_result = ft_capped
         contract_result = contract[:contract_target]
 
+        # Log per-source breakdown
+        breakdown = {}
+        for job in ft_result:
+            src = job.get("source", "unknown")
+            breakdown[src] = breakdown.get(src, 0) + 1
+        print(f"[Aggregator] FT source breakdown: {breakdown}")
         print(
             f"[Aggregator] {len(ft_result)} full-time + "
             f"{len(contract_result)} W2/contract = {len(ft_result + contract_result)} total jobs"
@@ -226,7 +244,7 @@ class JobAggregator:
         scorer,
         resume_ai: str,
         resume_fullstack: str,
-        ft_target: int = 50,
+        ft_target: int = 100,
         contract_target: int = 20,
     ) -> List[Dict]:
         """
@@ -272,7 +290,7 @@ class JobAggregator:
         full_time_candidates = sorted(
             [j for j in recent if j.get("job_type") == "full_time"],
             key=lambda x: x["_kw_score"], reverse=True
-        )[:ft_target + 20]
+        )[:ft_target + 50]
 
         contract_candidates = sorted(
             [j for j in recent if j.get("job_type") in ("contract", "w2")],
