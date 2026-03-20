@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: '24', sortBy: 'newest', newOnly: false }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: false }
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
@@ -151,6 +151,21 @@ export default function App() {
             {error}
           </div>
         )}
+
+        {/* SimplifyJobs status banner */}
+        {!loading && (() => {
+          const simplifyJobs = jobs.filter(j => j.source === 'SimplifyJobs')
+          if (simplifyJobs.length === 0) return (
+            <div className="mb-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-xs text-gray-500">
+              📋 No new SimplifyJobs listings today — showing Jooble &amp; Adzuna results only
+            </div>
+          )
+          return (
+            <div className="mb-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-xs text-gray-500">
+              📋 {simplifyJobs.length} SimplifyJobs listing{simplifyJobs.length !== 1 ? 's' : ''} included (no timestamp — posting date unknown)
+            </div>
+          )
+        })()}
 
         {/* New jobs banner */}
         {!loading && (() => {

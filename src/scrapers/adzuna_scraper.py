@@ -66,6 +66,7 @@ class AdzunaScraper(BaseScraper):
                         "what": query,
                         "where": "United States",
                         "max_days_old": max_days,
+                        "category": "it-jobs",
                     },
                     timeout=15,
                 )

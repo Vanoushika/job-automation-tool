@@ -83,6 +83,28 @@ class JobAggregator:
         print(f"[Aggregator] After dedup: {len(deduped)} unique jobs")
         return deduped
 
+    def filter_tech_roles(self, jobs: List[Dict]) -> List[Dict]:
+        """Keep only software/tech roles. Removes fitness instructors, coordinators, etc."""
+        TECH_KEYWORDS = [
+            "engineer", "developer", "dev ", "dev,", "programmer", "software",
+            "frontend", "backend", "full stack", "fullstack", "full-stack",
+            "devops", "sre", "data ", "machine learning", " ml ", "deep learning",
+            "ai ", "cloud", "mobile", "ios", "android", "python", "java",
+            "javascript", "typescript", "react", "node", "web ", "api ",
+            "platform", "infrastructure", "security", "database", "analytics",
+            "qa ", "quality assurance", "automation", "architect", "scientist",
+            " tech", "computer science", "it ", "information technology",
+            "golang", "rust", "scala", "kubernetes", "docker", "aws", "azure",
+        ]
+        kept = [
+            j for j in jobs
+            if any(kw in (j.get("role") or "").lower() for kw in TECH_KEYWORDS)
+        ]
+        removed = len(jobs) - len(kept)
+        if removed:
+            print(f"[Aggregator] Removed {removed} non-tech roles → {len(kept)} remaining")
+        return kept
+
     def filter_ineligible(self, jobs: List[Dict]) -> List[Dict]:
         """
         Remove jobs requiring security clearance or US citizenship.
@@ -208,6 +230,9 @@ class JobAggregator:
         Return top ft_target full-time jobs + top contract_target W2/contract jobs.
         Applies a per-source cap so no single source dominates the results.
         """
+        # Drop jobs with 0% score — no description means no useful match
+        scored_jobs = [j for j in scored_jobs if (j.get("best_score") or 0) >= 10]
+
         full_time, contract = self.split_by_type(scored_jobs)
 
         full_time.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
@@ -259,7 +284,8 @@ class JobAggregator:
         raw = self.fetch_all_raw()
         deduped = self.deduplicate(raw)
         us_only = self.filter_us_only(deduped)
-        eligible = self.filter_ineligible(us_only)
+        tech_only = self.filter_tech_roles(us_only)
+        eligible = self.filter_ineligible(tech_only)
 
         # Full-time: today only (posted within 24h)
         # Contract/W2: 2-day window — they're posted less frequently
