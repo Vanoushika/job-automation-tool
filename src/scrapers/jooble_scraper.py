@@ -83,8 +83,13 @@ class JoobleScraper(BaseScraper):
             role     = item.get("title", "").strip()
             location = item.get("location", "").strip()
             apply_url = item.get("link", "").strip()
+            # Use role title as primary description — Jooble snippets are vague
+            # and often hurt ATS scores. The role title has the best keyword signal.
             snippet = item.get("snippet", "").strip()
             description = f"{role} at {company}. {snippet}" if snippet else f"{role} at {company}"
+            # Trim snippet to 300 chars max — long snippets dilute keyword density
+            if len(description) > len(f"{role} at {company}. ") + 300:
+                description = f"{role} at {company}. " + snippet[:300]
             posted_date = self._parse_date(item.get("updated", ""))
 
             if not company or not role or not apply_url:

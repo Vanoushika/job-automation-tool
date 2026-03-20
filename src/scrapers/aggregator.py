@@ -230,22 +230,40 @@ class JobAggregator:
         Return top ft_target full-time jobs + top contract_target W2/contract jobs.
         Applies a per-source cap so no single source dominates the results.
         """
-        # Drop jobs with 0% score — no description means no useful match
+        # Drop jobs with low scores — no description = no useful match
         scored_jobs = [j for j in scored_jobs if (j.get("best_score") or 0) >= 10]
+
+        # Block known staffing agencies / job boards masquerading as employers
+        BLOCKED_COMPANIES = {
+            "synergisticit", "robert half", "jobright.ai", "cynet systems",
+            "kforce", "tek systems", "teksystems", "staffmark", "randstad",
+            "manpower", "adecco", "insight global", "apex systems",
+            "softpath system", "mastech", "igate", "wipro", "infosys bpm",
+        }
+        scored_jobs = [
+            j for j in scored_jobs
+            if (j.get("company") or "").lower().strip() not in BLOCKED_COMPANIES
+        ]
 
         full_time, contract = self.split_by_type(scored_jobs)
 
         full_time.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
         contract.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
 
-        # Per-source cap: take top N per source (by score), then merge and re-sort
+        # Per-source cap + per-company cap (max 2 per company to avoid spam)
         source_counts: Dict[str, int] = {}
+        company_counts: Dict[str, int] = {}
         ft_capped = []
         for job in full_time:
             src = job.get("source", "unknown")
-            if source_counts.get(src, 0) < per_source_cap:
-                ft_capped.append(job)
-                source_counts[src] = source_counts.get(src, 0) + 1
+            company = (job.get("company") or "").lower().strip()
+            if source_counts.get(src, 0) >= per_source_cap:
+                continue
+            if company_counts.get(company, 0) >= 2:
+                continue
+            ft_capped.append(job)
+            source_counts[src] = source_counts.get(src, 0) + 1
+            company_counts[company] = company_counts.get(company, 0) + 1
             if len(ft_capped) >= ft_target:
                 break
 
