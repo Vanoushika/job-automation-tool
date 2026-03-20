@@ -84,18 +84,24 @@ def run_pipeline(send_email: bool = True) -> list:
     now_iso  = datetime.now(timezone.utc).isoformat()
     now      = datetime.now(timezone.utc)
 
-    # Drop jobs we've been showing for more than 2 days — they're stale
-    two_days_ago = now - timedelta(days=2)
+    # Staleness filter:
+    # - SimplifyJobs relists jobs indefinitely — drop any job we've seen before from that source
+    # - All other sources: drop jobs first seen 3+ days ago
+    three_days_ago = now - timedelta(days=3)
     fresh_jobs = []
     stale_count = 0
     for job in top_jobs:
         prev = existing.get(job["id"])
         if prev:
+            if job.get("source") == "SimplifyJobs":
+                # SimplifyJobs shows same jobs forever — once seen, never show again
+                stale_count += 1
+                continue
             try:
                 fs = datetime.fromisoformat(prev.get("first_seen", now_iso))
                 if fs.tzinfo is None:
                     fs = fs.replace(tzinfo=timezone.utc)
-                if fs < two_days_ago:
+                if fs < three_days_ago:
                     stale_count += 1
                     continue
             except Exception:
@@ -103,7 +109,7 @@ def run_pipeline(send_email: bool = True) -> list:
         fresh_jobs.append(job)
     top_jobs = fresh_jobs
     if stale_count:
-        print(f"[Pipeline] Dropped {stale_count} stale jobs (seen 2+ days ago) → {len(top_jobs)} remaining")
+        print(f"[Pipeline] Dropped {stale_count} stale jobs → {len(top_jobs)} remaining")
 
     if not top_jobs:
         print("\n[Pipeline] No fresh jobs found today. Try again later.")
@@ -134,9 +140,9 @@ def run_pipeline(send_email: bool = True) -> list:
         else:
             job["first_seen"] = now_iso
 
-        # is_new = posted within 48h based on actual posting date
-        # This way Jooble/Adzuna jobs stay "new" all day, not just one pipeline run
-        job["is_new"] = _is_recently_posted(job.get("posted_date", ""))
+        # is_new = wasn't in the previous pipeline run's output
+        # This is the only reliable signal — SimplifyJobs always fakes "posted today"
+        job["is_new"] = prev is None
 
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
