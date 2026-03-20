@@ -73,8 +73,9 @@ class ATSScorer:
         """Fast keyword matching — returns scores 0-100."""
         text_lower = text.lower()
 
-        # Short text = title only (no description). Use targeted title scoring.
-        if len(text_lower.strip()) < 120:
+        # Short text (Jooble snippets, title-only) — use title-based scoring.
+        # 300-char threshold captures Jooble's "Role at Company. Short snippet." format.
+        if len(text_lower.strip()) < 300:
             ai_score = self._title_score(text_lower, "ai")
             fs_score = self._title_score(text_lower, "fullstack")
         else:
@@ -148,11 +149,13 @@ class ATSScorer:
         if self.client and len(description.strip()) > 150:
             llm_ai = self._llm_score(description, resume_ai, "AI-Focused")
             if llm_ai is not None:
-                ai_score = llm_ai
+                # Take the better of LLM and keyword scores — keyword scoring
+                # protects against LLM underscoring short/vague Jooble snippets
+                ai_score = max(llm_ai, ai_score)
 
             llm_fs = self._llm_score(description, resume_fullstack, "Full-Stack")
             if llm_fs is not None:
-                fs_score = llm_fs
+                fs_score = max(llm_fs, fs_score)
 
         best_score = max(ai_score, fs_score)
         best_resume = "AI" if ai_score >= fs_score else "Full-Stack"
@@ -167,11 +170,11 @@ class ATSScorer:
 
     @staticmethod
     def assign_tier(score: float) -> str:
-        if score >= 85:
+        if score >= 72:
             return "A"
-        elif score >= 75:
+        elif score >= 58:
             return "B"
-        elif score >= 65:
+        elif score >= 42:
             return "C"
         else:
             return "D"
@@ -200,14 +203,14 @@ class ATSScorer:
         prompt = f"""You are an ATS (Applicant Tracking System) scoring a new graduate candidate.
 
 IMPORTANT CONTEXT: This is a new graduate / entry-level candidate (0-2 years experience).
-Score based on SKILLS AND TECH STACK ALIGNMENT, not years of experience.
-If the candidate has the right technical skills, score them 75-95 even if they lack years of experience.
+Score based on ROLE TYPE and TECH STACK ALIGNMENT, not years of experience.
+A software engineering role at a real tech company is a strong match even if the job description is brief.
 
 Scoring guide (0-100):
-- 85-100: Strong tech stack match, relevant projects, right domain
-- 70-84: Good skill overlap, mostly matching technologies
-- 55-69: Partial match, some relevant skills
-- Below 55: Weak match, different tech stack or domain
+- 80-100: Role type clearly matches (SWE/ML/Backend/Frontend/Full-Stack), tech stack aligns
+- 65-79: Role type matches, partial tech stack overlap or vague description
+- 45-64: Related tech role, different domain or stack
+- Below 45: Clearly different field (non-SWE, sales, design, etc.) or no relevant skills
 
 Job Description:
 {description[:2500]}

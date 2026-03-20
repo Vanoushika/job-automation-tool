@@ -107,10 +107,10 @@ export default function App() {
   }
 
   const TIER_LABELS = {
-    A: { label: 'Tier A — 85%+ Match', color: 'text-green-700 bg-green-50 border-green-200' },
-    B: { label: 'Tier B — 75–84% Match', color: 'text-blue-700 bg-blue-50 border-blue-200' },
-    C: { label: 'Tier C — 65–74% Match', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
-    D: { label: 'Tier D — Below 65%', color: 'text-gray-600 bg-gray-50 border-gray-200' },
+    A: { label: 'Tier A — 72%+ Match', color: 'text-green-700 bg-green-50 border-green-200' },
+    B: { label: 'Tier B — 58–71% Match', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+    C: { label: 'Tier C — 42–57% Match', color: 'text-yellow-700 bg-yellow-50 border-yellow-200' },
+    D: { label: 'Tier D — Below 42%', color: 'text-gray-600 bg-gray-50 border-gray-200' },
   }
 
   return (
