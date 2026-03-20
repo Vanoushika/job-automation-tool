@@ -7,6 +7,7 @@ from .remotive_scraper import RemotiveScraper
 from .jobicy_scraper import JobicyScraper
 from .muse_scraper import MuseScraper
 from .adzuna_scraper import AdzunaScraper
+from .jooble_scraper import JoobleScraper
 
 
 NON_US_SIGNALS = [
@@ -48,6 +49,7 @@ class JobAggregator:
         JobicyScraper,
         MuseScraper,
         AdzunaScraper,      # W2/contract when ADZUNA_APP_ID + ADZUNA_APP_KEY are set
+        JoobleScraper,      # LinkedIn/Indeed/Glassdoor via Jooble when JOOBLE_API_KEY is set
     ]
 
     def fetch_all_raw(self) -> List[Dict]:

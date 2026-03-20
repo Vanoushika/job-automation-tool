@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.4.0
         with:
           python-version: '3.12'
 
@@ -32,9 +32,10 @@ jobs:
 
       - name: Run pipeline
         env:
-          GROQ_API_KEY:  ${{ secrets.GROQ_API_KEY }}
-          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
-          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          GROQ_API_KEY:    ${{ secrets.GROQ_API_KEY }}
+          ADZUNA_APP_ID:   ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY:  ${{ secrets.ADZUNA_APP_KEY }}
+          JOOBLE_API_KEY:  ${{ secrets.JOOBLE_API_KEY }}
         run: python run_daily.py --no-email
 
       - name: Push jobs to data branch via GitHub API
