@@ -28,7 +28,8 @@ from src.scoring.ats_scorer import ATSScorer
 
 def fetch_existing_jobs() -> dict:
     """Fetch previously seen jobs from GitHub data branch. Returns dict keyed by job id."""
-    token = os.getenv("GITHUB_TOKEN", "")
+    # GITHUB_TOKEN = GitHub Actions built-in; GITHUB_PAT = Render env var
+    token = os.getenv("GITHUB_TOKEN", "") or os.getenv("GITHUB_PAT", "")
     if not token:
         # Fall back to local file
         path = Path("jobs_output.json")
