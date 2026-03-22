@@ -4,7 +4,16 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: true }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: true, roleType: 'all' }
+
+const ROLE_TYPE_KEYWORDS = {
+  swe:       ['software engineer', 'software developer', 'swe', 'software development'],
+  backend:   ['backend', 'back end', 'back-end', 'server-side', 'api engineer', 'platform engineer'],
+  frontend:  ['frontend', 'front end', 'front-end', 'ui engineer', 'react developer', 'web developer'],
+  fullstack: ['full stack', 'fullstack', 'full-stack'],
+  ml:        ['machine learning', 'ml engineer', 'ai engineer', 'data scientist', 'mlops', 'deep learning', 'nlp'],
+  mobile:    ['ios', 'android', 'mobile', 'swift', 'kotlin', 'flutter', 'react native'],
+}
 
 const TIER_ORDER = ['A', 'B', 'C', 'D']
 
@@ -18,6 +27,10 @@ export default function App() {
   const [error, setError] = useState(null)
   const [hiddenIds, setHiddenIds] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('hiddenJobs') || '[]')) }
+    catch { return new Set() }
+  })
+  const [appliedIds, setAppliedIds] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('appliedJobs') || '[]')) }
     catch { return new Set() }
   })
 
@@ -47,8 +60,11 @@ export default function App() {
     return () => clearInterval(interval)
   }, [fetchAll])
 
+  // Merge localStorage applied status into jobs (survives Render restarts + refreshes)
+  const jobsWithApplied = jobs.map(j => appliedIds.has(j.id) ? { ...j, applied: true } : j)
+
   // Client-side filtering
-  let filtered = jobs.filter(j => !hiddenIds.has(j.id)).filter(j => {
+  let filtered = jobsWithApplied.filter(j => !hiddenIds.has(j.id)).filter(j => {
     if (filters.tier !== 'all' && j.tier !== filters.tier) return false
     if (filters.jobType !== 'all' && j.job_type !== filters.jobType) return false
     if (filters.appliedOnly && !j.applied) return false
@@ -61,6 +77,10 @@ export default function App() {
       if (!j.posted_date || new Date(j.posted_date).getTime() < cutoff) return false
     }
     if (filters.newOnly && !j.is_new) return false
+    if (filters.roleType !== 'all') {
+      const kws = ROLE_TYPE_KEYWORDS[filters.roleType] || []
+      if (!kws.some(kw => (j.role || '').toLowerCase().includes(kw))) return false
+    }
     return true
   })
 
@@ -81,7 +101,12 @@ export default function App() {
   }, {})
 
   function handleApplied(jobId) {
-    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, applied: true } : j))
+    setAppliedIds(prev => {
+      const next = new Set(prev)
+      next.add(jobId)
+      localStorage.setItem('appliedJobs', JSON.stringify([...next]))
+      return next
+    })
     setStats(prev => ({ ...prev, applied: (prev.applied || 0) + 1 }))
   }
 
@@ -154,7 +179,7 @@ export default function App() {
 
         {/* SimplifyJobs status banner */}
         {!loading && (() => {
-          const simplifyJobs = jobs.filter(j => j.source === 'SimplifyJobs')
+          const simplifyJobs = jobsWithApplied.filter(j => j.source === 'SimplifyJobs')
           if (simplifyJobs.length === 0) return (
             <div className="mb-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-xs text-gray-500">
               📋 No new SimplifyJobs listings today — showing Jooble &amp; Adzuna results only
@@ -169,12 +194,14 @@ export default function App() {
 
         {/* New jobs banner */}
         {!loading && (() => {
-          const newCount = jobs.filter(j => j.is_new).length
+          const newCount = jobsWithApplied.filter(j => j.is_new).length
+          const appliedCount = appliedIds.size
           return (
             <div className="mb-4 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3 flex items-center justify-between">
               <span className="text-indigo-700 font-semibold text-sm">
                 🆕 {newCount} fresh job{newCount !== 1 ? 's' : ''} today
-                <span className="font-normal text-indigo-500 ml-2">· {jobs.length} total in database</span>
+                <span className="font-normal text-indigo-500 ml-2">· {jobs.length} total</span>
+                {appliedCount > 0 && <span className="font-normal text-purple-500 ml-2">· ✔ {appliedCount} applied</span>}
               </span>
               <button
                 onClick={() => setFilters(f => ({ ...f, newOnly: !f.newOnly }))}
@@ -206,11 +233,11 @@ export default function App() {
             <p className="text-5xl mb-3">🔍</p>
             <p className="font-medium">No jobs found</p>
             <p className="text-sm mt-1">
-              {jobs.length === 0
+              {jobsWithApplied.length === 0
                 ? 'Run the pipeline first to fetch and score jobs.'
                 : 'Try changing your filters.'}
             </p>
-            {jobs.length === 0 && (
+            {jobsWithApplied.length === 0 && (
               <button
                 onClick={triggerRun}
                 className="mt-4 px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"

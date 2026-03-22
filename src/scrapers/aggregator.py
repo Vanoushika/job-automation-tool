@@ -311,9 +311,9 @@ class JobAggregator:
         contract_pool = [j for j in eligible if j.get("job_type") in ("contract", "w2")]
 
         recent_ft = self.filter_by_date(ft_pool, max_days=1)
-        recent_contract = self.filter_by_date(contract_pool, max_days=2)
+        recent_contract = self.filter_by_date(contract_pool, max_days=1)
         recent = recent_ft + recent_contract
-        print(f"[Aggregator] Pool: {len(recent_ft)} FT (1d) + {len(recent_contract)} W2/contract (2d) = {len(recent)}")
+        print(f"[Aggregator] Pool: {len(recent_ft)} FT (1d) + {len(recent_contract)} W2/contract (1d) = {len(recent)}")
 
         if not recent:
             print("[Aggregator] No recent jobs found.")

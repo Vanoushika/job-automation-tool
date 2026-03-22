@@ -8,10 +8,10 @@ const TIER_STYLES = {
 }
 
 function scoreColor(score) {
-  if (score >= 85) return 'text-green-600'
-  if (score >= 75) return 'text-blue-600'
-  if (score >= 65) return 'text-yellow-600'
-  return 'text-gray-500'
+  if (score >= 72) return 'text-green-600'   // Tier A
+  if (score >= 58) return 'text-blue-600'    // Tier B
+  if (score >= 42) return 'text-yellow-600'  // Tier C
+  return 'text-gray-500'                     // Tier D
 }
 
 function timeAgo(isoStr) {
@@ -85,7 +85,6 @@ export default function JobCard({ job, onApplied, onHide }) {
             <span className={`font-medium ${job.job_type === 'contract' ? 'text-orange-600' : 'text-indigo-600'}`}>
               {job.job_type === 'contract' ? '💼 W2/Contract' : '🏢 Full-Time'}
             </span>
-            <span>📄 {job.best_resume} Resume</span>
             <span>🌐 {job.source}</span>
             {job.posted_date && <span>🕐 {timeAgo(job.posted_date)}</span>}
           </div>
@@ -95,7 +94,12 @@ export default function JobCard({ job, onApplied, onHide }) {
         <div className="flex flex-col items-center gap-2 shrink-0">
           <div className="text-center">
             <p className={`text-3xl font-black leading-none ${scoreColor(score)}`}>{score.toFixed(0)}%</p>
-            <p className="text-xs text-gray-400 mt-0.5">ATS match</p>
+            <p className="text-xs text-gray-400 mt-0.5">ATS · {job.best_resume} Resume</p>
+            {job.ats_score_ai != null && job.ats_score_fullstack != null && (
+              <p className="text-xs text-gray-400 mt-0.5 leading-tight">
+                AI {job.ats_score_ai?.toFixed(0)}% · FS {job.ats_score_fullstack?.toFixed(0)}%
+              </p>
+            )}
           </div>
 
           <button

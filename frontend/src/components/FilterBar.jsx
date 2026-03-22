@@ -1,4 +1,14 @@
 export default function FilterBar({ filters, setFilters }) {
+  const roleTypes = [
+    { value: 'all',       label: 'All Roles' },
+    { value: 'swe',       label: 'SWE' },
+    { value: 'backend',   label: 'Backend' },
+    { value: 'frontend',  label: 'Frontend' },
+    { value: 'fullstack', label: 'Full Stack' },
+    { value: 'ml',        label: 'ML / AI' },
+    { value: 'mobile',    label: 'Mobile' },
+  ]
+
   const tiers = ['all', 'A', 'B', 'C', 'D']
   const types = [
     { value: 'all',       label: 'All Types' },
@@ -20,6 +30,23 @@ export default function FilterBar({ filters, setFilters }) {
 
   return (
     <div className="flex flex-wrap gap-3 mb-6 items-center">
+      {/* Role type filter */}
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-wrap">
+        {roleTypes.map((r) => (
+          <button
+            key={r.value}
+            onClick={() => setFilters(f => ({ ...f, roleType: r.value }))}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+              filters.roleType === r.value
+                ? 'bg-violet-500 text-white'
+                : 'text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+
       {/* Tier filter */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
         {tiers.map((t) => {

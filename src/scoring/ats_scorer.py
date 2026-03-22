@@ -190,8 +190,9 @@ class ATSScorer:
             if kw in text:
                 matched_weight += weight
         # Normalize to 0-100, cap at 95 (LLM can push to 100)
+        # Use 4x multiplier — large keyword set means even good matches only hit ~20% raw
         raw = (matched_weight / total_weight) * 100
-        return min(raw * 2.5, 95)  # scale up so scores are meaningful
+        return min(raw * 4.0, 95)
 
     def _llm_score(
         self, description: str, resume_text: str, resume_label: str
@@ -202,15 +203,21 @@ class ATSScorer:
         """
         prompt = f"""You are an ATS (Applicant Tracking System) scoring a new graduate candidate.
 
-IMPORTANT CONTEXT: This is a new graduate / entry-level candidate (0-2 years experience).
+CONTEXT: New graduate / entry-level candidate (0-2 years experience).
 Score based on ROLE TYPE and TECH STACK ALIGNMENT, not years of experience.
-A software engineering role at a real tech company is a strong match even if the job description is brief.
+
+CRITICAL RULES:
+1. If the job title is a software engineering role (Software Engineer, SWE, Backend Engineer, Frontend Engineer, Full Stack Engineer, ML Engineer, Data Engineer, Platform Engineer, DevOps, etc.) — minimum score is 60, even if the description is vague or brief.
+2. If the job title matches AND the tech stack aligns with the resume — score 75-95.
+3. Only score below 45 if the role is clearly NOT software engineering (sales, marketing, operations, HR, design, fitness, etc.).
+4. Do NOT penalize for a vague job description — brief Jooble/LinkedIn snippets still represent real SWE jobs.
 
 Scoring guide (0-100):
-- 80-100: Role type clearly matches (SWE/ML/Backend/Frontend/Full-Stack), tech stack aligns
-- 65-79: Role type matches, partial tech stack overlap or vague description
-- 45-64: Related tech role, different domain or stack
-- Below 45: Clearly different field (non-SWE, sales, design, etc.) or no relevant skills
+- 80-95: Role is SWE/ML/Backend/Frontend/Full-Stack AND tech stack clearly aligns with resume
+- 65-79: Role is SWE/tech role, partial stack overlap or vague description
+- 60-64: Role is SWE/tech but different domain (e.g., embedded systems, gaming if resume is web-focused)
+- 45-59: Tech-adjacent role (QA, DevOps, data analyst) with some overlap
+- Below 45: Clearly non-engineering role (sales, marketing, design, etc.)
 
 Job Description:
 {description[:2500]}
