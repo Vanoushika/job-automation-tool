@@ -52,7 +52,7 @@ class AdzunaScraper(BaseScraper):
 
         searches = (
             [(q, False, 1) for q in self.FT_SEARCHES] +
-            [(q, True,  2) for q in self.CONTRACT_SEARCHES]
+            [(q, True,  1) for q in self.CONTRACT_SEARCHES]
         )
 
         for query, is_contract, max_days in searches:

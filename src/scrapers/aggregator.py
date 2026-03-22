@@ -116,15 +116,14 @@ class JobAggregator:
             "director", "vp of", "vice president", "head of engineering",
         ]
         pre = len(jobs)
-        # Only apply senior filter to full-time — contract roles often inflate titles
+        # Apply senior filter to ALL job types — new grad shouldn't apply to senior/staff/lead
         jobs = [
             j for j in jobs
-            if j.get("job_type") in ("contract", "w2")
-            or not any(s in (j.get("role") or "").lower() for s in SENIOR_SIGNALS)
+            if not any(s in (j.get("role") or "").lower() for s in SENIOR_SIGNALS)
         ]
         senior_removed = pre - len(jobs)
         if senior_removed:
-            print(f"[Aggregator] Removed {senior_removed} senior/lead/staff full-time jobs → {len(jobs)} remaining")
+            print(f"[Aggregator] Removed {senior_removed} senior/lead/staff jobs → {len(jobs)} remaining")
 
         PHD_ROLE_SIGNALS = [
             "phd", "ph.d", "research scientist", "doctoral",
