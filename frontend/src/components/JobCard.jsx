@@ -113,6 +113,9 @@ export default function JobCard({ job, onApplied, onHide }) {
           >
             {job.applied ? 'Applied' : 'Apply Now'}
           </button>
+          {job.source === 'Jooble' && !job.applied && (
+            <p className="text-xs text-gray-400 text-center leading-tight">via Jooble →<br/>company site</p>
+          )}
 
           <button
             onClick={() => onHide(job.id)}
