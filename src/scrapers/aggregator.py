@@ -397,31 +397,24 @@ class JobAggregator:
             )
             job["_kw_score"] = max(scores["ai"], scores["fullstack"])
 
-        # Score enough candidates to fill both full-time AND contract lists
-        # Separate top scorers from each type so both get LLM scored
-        full_time_candidates = sorted(
-            [j for j in recent if j.get("job_type") == "full_time"],
-            key=lambda x: x["_kw_score"], reverse=True
-        )[:ft_target + 50]
+        # Only LLM-score jobs in the ambiguous keyword range (40-75%).
+        # Clear matches (>75%) and clear rejects (<40%) don't need LLM.
+        # This keeps token usage under Groq's free tier limits (~500k TPD for 8b model).
+        ambiguous = [j for j in recent if 40 <= j["_kw_score"] <= 75]
+        clear_good = [j for j in recent if j["_kw_score"] > 75]
+        clear_bad  = [j for j in recent if j["_kw_score"] < 40]
 
-        contract_candidates = sorted(
-            [j for j in recent if j.get("job_type") in ("contract", "w2")],
-            key=lambda x: x["_kw_score"], reverse=True
-        )[:contract_target + 10]
+        # Cap ambiguous candidates to limit token usage
+        top_candidates = ambiguous[:80]
 
-        top_candidates = full_time_candidates + contract_candidates
-        # Dedupe in case any job appeared in both lists
-        seen = set()
-        top_candidates = [j for j in top_candidates if not (j["id"] in seen or seen.add(j["id"]))]
-
-        # LLM score top candidates
-        print(f"[Aggregator] LLM scoring {len(top_candidates)} top candidates...")
+        # LLM score ambiguous candidates
+        print(f"[Aggregator] LLM scoring {len(top_candidates)} ambiguous candidates (skipping {len(clear_good)} clear matches, {len(clear_bad)} clear rejects)...")
         for job in top_candidates:
             desc = job.get("description") or f"{job['role']} at {job['company']} in {job['location']}"
             result = scorer.score(desc, resume_ai, resume_fullstack)
             job.update(result)
 
-        # Jobs that weren't LLM-scored get keyword scores
+        # Jobs not LLM-scored get their keyword scores directly
         scored_ids = {j["id"] for j in top_candidates}
         for job in recent:
             if job["id"] not in scored_ids:
@@ -429,7 +422,7 @@ class JobAggregator:
                 job["ats_score_ai"] = kw
                 job["ats_score_fullstack"] = kw
                 job["best_score"] = kw
-                job["best_resume"] = "AI"
+                job["best_resume"] = "Full-Stack"
                 job["tier"] = scorer.assign_tier(kw)
 
         # Combine all scored jobs

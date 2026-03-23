@@ -239,7 +239,7 @@ Respond with ONLY a single integer from 0 to 100. No explanation."""
 
         try:
             response = self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
+                model="llama-3.1-8b-instant",  # 500k TPD free vs 100k for 70b
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
                 max_tokens=10,
