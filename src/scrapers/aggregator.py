@@ -318,14 +318,17 @@ class JobAggregator:
         full_time.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
         contract.sort(key=lambda x: x.get("best_score") or 0, reverse=True)
 
-        # Per-source cap + per-company cap (max 2 per company to avoid spam)
+        # Per-source cap — curated sources (SimplifyJobs, Greenhouse) get higher cap
+        # since they're already filtered for new-grad roles
+        CURATED_SOURCES = {"SimplifyJobs", "Greenhouse"}
         source_counts: Dict[str, int] = {}
         company_counts: Dict[str, int] = {}
         ft_capped = []
         for job in full_time:
             src = job.get("source", "unknown")
             company = (job.get("company") or "").lower().strip()
-            if source_counts.get(src, 0) >= per_source_cap:
+            cap = 60 if src in CURATED_SOURCES else per_source_cap
+            if source_counts.get(src, 0) >= cap:
                 continue
             if company_counts.get(company, 0) >= 2:
                 continue
