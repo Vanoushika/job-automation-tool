@@ -218,10 +218,13 @@ class JobAggregator:
         """
         kept = []
         for job in jobs:
-            loc = (job.get("location") or "").lower()
+            loc = (job.get("location") or "").lower().strip()
             # Always allow remote / worldwide
             if "remote" in loc or "worldwide" in loc or "anywhere" in loc:
                 kept.append(job)
+                continue
+            # Exclude standalone "uk" (Jobicy/Jooble sometimes returns just "UK")
+            if loc in ("uk", "u.k.", "gb", "united kingdom"):
                 continue
             # Exclude known non-US locations
             if any(signal in loc for signal in NON_US_SIGNALS):
@@ -275,6 +278,12 @@ class JobAggregator:
             "kforce", "tek systems", "teksystems", "staffmark", "randstad",
             "manpower", "adecco", "insight global", "apex systems",
             "softpath system", "mastech", "igate", "wipro", "infosys bpm",
+            # Additional staffing agencies found in the wild
+            "artech", "staffing the universe", "maintec technologies",
+            "anagh technology", "eitacies", "acestack", "acestack llc",
+            "libsys", "nava software solutions", "clifyx",
+            "motion recruitment", "judge group", "beacon hill",
+            "genesis10", "horizontal talent", "smart it staffing",
         }
         scored_jobs = [
             j for j in scored_jobs
