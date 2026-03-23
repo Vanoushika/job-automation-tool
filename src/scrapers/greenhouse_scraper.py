@@ -99,19 +99,20 @@ class GreenhouseScraper(BaseScraper):
         if not apply_url:
             return None
 
-        # Parse updated_at timestamp — Greenhouse shows when the job was last modified,
-        # not when hiring started. Jobs updated within 30 days are actively being filled.
-        # We set posted_date = now so they pass the pipeline's 1-day date filter.
-        # Jobs older than 30 days are skipped — likely paused or stale.
+        # Greenhouse updated_at is when the posting was last touched, not when hiring opened.
+        # Skip postings older than 30 days (stale/paused).
+        # Set posted_date = None so no fake timestamp is shown on the card.
+        # filter_by_date() passes through None-date jobs; staleness is controlled
+        # by the 4-day window in run_daily.py.
         updated_str = item.get("updated_at", "")
         try:
             updated_dt = datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
             age_days = (datetime.now(timezone.utc) - updated_dt).days
             if age_days > 30:
                 return None  # Skip stale postings
-            posted_date = datetime.now(timezone.utc)  # Treat as fresh for date filter
         except Exception:
-            posted_date = datetime.now(timezone.utc)
+            pass
+        posted_date = None  # Hide timestamp — Greenhouse dates are not real posting times
 
         # Use company slug as display name — real name comes from API if available
         company_name = company_slug.replace("-", " ").title()

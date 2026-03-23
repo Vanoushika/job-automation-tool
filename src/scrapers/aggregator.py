@@ -13,9 +13,10 @@ from .greenhouse_scraper import GreenhouseScraper
 
 
 NON_US_SIGNALS = [
-    # UK
+    # UK / Ireland
     "united kingdom", " uk", "u.k.", "london", "manchester", "birmingham",
     "edinburgh", "glasgow", "bristol", "leeds", "england", "scotland", "wales",
+    "ireland", "dublin", "cork",
     # Canada
     "canada", "ontario", "british columbia", "alberta", "quebec", "toronto",
     "vancouver", "calgary", "ottawa", "mississauga", "montreal",
@@ -28,10 +29,14 @@ NON_US_SIGNALS = [
     "sweden", "stockholm", "denmark", "copenhagen", "finland", "helsinki",
     "spain", "madrid", "barcelona", "italy", "milan", "rome", "portugal",
     "lisbon", "czech", "prague", "austria", "vienna", "switzerland", "zurich",
-    "europe", "eu only", "emea",
+    "europe", "eu only", "emea", "reykjavik", "reykjavík", "iceland",
+    # Latin America
+    "mexico", "mexico city", "brazil", "são paulo", "bogota", "colombia",
+    "argentina", "buenos aires", "latam", "latin america",
     # Other
     "australia", "sydney", "melbourne", "singapore", "japan", "tokyo",
-    "israel", "tel aviv", "brazil", "latam", "latin america", "new zealand",
+    "israel", "tel aviv", "new zealand", "china", "beijing", "shanghai",
+    "south korea", "seoul", "taiwan", "taipei",
 ]
 
 
@@ -152,15 +157,33 @@ class JobAggregator:
             "lead ", "tech lead", "engineering manager", "eng manager",
             "director", "vp of", "vice president", "head of engineering",
         ]
-        pre = len(jobs)
-        # Apply senior filter to ALL job types — new grad shouldn't apply to senior/staff/lead
-        jobs = [
-            j for j in jobs
-            if not any(s in (j.get("role") or "").lower() for s in SENIOR_SIGNALS)
+        # Experience-level signals in job title (e.g. "2-8 YOE", "5+ years")
+        EXPERIENCE_SIGNALS = [
+            "2-8 yoe", "3-5 yoe", "5+ yoe", "8+ yoe", "10+ yoe",
+            "3+ years", "5+ years", "7+ years", "10+ years",
+            "2-5 years", "3-7 years", "5-10 years",
         ]
+        # Internship signals — not full-time permanent roles
+        INTERN_SIGNALS = ["intern", "internship", " co-op", " coop"]
+
+        pre = len(jobs)
+        filtered = []
+        for j in jobs:
+            role_lower = (j.get("role") or "").lower()
+            # Catch "Sr Software Engineer" (starts with sr) and mid-string " sr "
+            if role_lower.startswith("sr ") or role_lower.startswith("sr."):
+                continue
+            if any(s in role_lower for s in SENIOR_SIGNALS):
+                continue
+            if any(s in role_lower for s in EXPERIENCE_SIGNALS):
+                continue
+            if any(s in role_lower for s in INTERN_SIGNALS):
+                continue
+            filtered.append(j)
+        jobs = filtered
         senior_removed = pre - len(jobs)
         if senior_removed:
-            print(f"[Aggregator] Removed {senior_removed} senior/lead/staff jobs → {len(jobs)} remaining")
+            print(f"[Aggregator] Removed {senior_removed} senior/intern/YOE jobs → {len(jobs)} remaining")
 
         PHD_ROLE_SIGNALS = [
             "phd", "ph.d", "research scientist", "doctoral",
@@ -219,30 +242,30 @@ class JobAggregator:
         kept = []
         for job in jobs:
             loc = (job.get("location") or "").lower().strip()
-            # Always allow remote / worldwide
-            if "remote" in loc or "worldwide" in loc or "anywhere" in loc:
-                kept.append(job)
-                continue
-            # Exclude standalone "uk" (Jobicy/Jooble sometimes returns just "UK")
+            # Check non-US signals FIRST — must happen before remote/anywhere check
+            # so "Canada - Remote", "Remote - Brazil", "Ukraine Anywhere" are blocked
             if loc in ("uk", "u.k.", "gb", "united kingdom"):
                 continue
-            # Exclude known non-US locations
             if any(signal in loc for signal in NON_US_SIGNALS):
                 continue
+            # Allow: remote (US), no location, "in-office", "n/a", or US location
             kept.append(job)
         print(f"[Aggregator] After US filter: {len(kept)} jobs")
         return kept
 
     def filter_by_date(self, jobs: List[Dict], max_days: int = 1) -> List[Dict]:
-        """Keep jobs posted within the last max_days days."""
+        """Keep jobs posted within the last max_days days.
+        Jobs with no posted_date (Greenhouse, Vanshb) are always included —
+        their staleness is controlled by the 4-day window in run_daily.py."""
         cutoff = datetime.now(timezone.utc) - timedelta(days=max_days)
         filtered = []
         for job in jobs:
             pd = job.get("posted_date")
             if not pd:
+                filtered.append(job)  # No date = include (Greenhouse/curated sources)
                 continue
             try:
-                posted = datetime.fromisoformat(pd)
+                posted = datetime.fromisoformat(str(pd))
                 if posted.tzinfo is None:
                     posted = posted.replace(tzinfo=timezone.utc)
                 if posted >= cutoff:
