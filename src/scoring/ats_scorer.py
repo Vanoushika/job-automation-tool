@@ -73,14 +73,24 @@ class ATSScorer:
         """Fast keyword matching — returns scores 0-100."""
         text_lower = text.lower()
 
-        # Short text (Jooble snippets, title-only) — use title-based scoring.
-        # 300-char threshold captures Jooble's "Role at Company. Short snippet." format.
-        if len(text_lower.strip()) < 300:
+        # Extract the title portion (Jooble format: "Role at Company. snippet...")
+        # Use the first sentence as the title signal
+        title_part = text_lower.split(".")[0][:120] if "." in text_lower else text_lower[:120]
+
+        if len(text_lower.strip()) < 150:
+            # Short text — title scoring is most reliable
             ai_score = self._title_score(text_lower, "ai")
             fs_score = self._title_score(text_lower, "fullstack")
         else:
+            # Full keyword match on entire text
             ai_score = self._kw_match(text_lower, self.AI_KEYWORDS)
             fs_score = self._kw_match(text_lower, self.FULLSTACK_KEYWORDS)
+            # Use title score as a floor — prevents vague descriptions from tanking
+            # jobs that clearly match by title (e.g. "React Developer entry level at Stripe")
+            title_ai = self._title_score(title_part, "ai")
+            title_fs = self._title_score(title_part, "fullstack")
+            ai_score = max(ai_score, title_ai)
+            fs_score = max(fs_score, title_fs)
             # New-grad signal boosts both scores
             if any(sig in text_lower for sig in self.NEW_GRAD_SIGNALS):
                 ai_score = min(ai_score + 10, 100)
@@ -145,8 +155,8 @@ class ATSScorer:
         ai_score = kw["ai"]
         fs_score = kw["fullstack"]
 
-        # LLM pass (only if description is rich enough to be worth it)
-        if self.client and len(description.strip()) > 150:
+        # LLM pass — run on any description with at least a job title
+        if self.client and len(description.strip()) > 30:
             llm_ai = self._llm_score(description, resume_ai, "AI-Focused")
             if llm_ai is not None:
                 # Take the better of LLM and keyword scores — keyword scoring
