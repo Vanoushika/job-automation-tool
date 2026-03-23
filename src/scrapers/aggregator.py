@@ -9,6 +9,7 @@ from .jobicy_scraper import JobicyScraper
 from .muse_scraper import MuseScraper
 from .adzuna_scraper import AdzunaScraper
 from .greenhouse_scraper import GreenhouseScraper
+from .lever_scraper import LeverScraper
 
 
 NON_US_SIGNALS = [
@@ -57,6 +58,7 @@ class JobAggregator:
         JobicyScraper,
         MuseScraper,
         AdzunaScraper,      # W2/contract when ADZUNA_APP_ID + ADZUNA_APP_KEY are set
+        LeverScraper,       # Direct company Lever boards — Notion, Figma, Netflix, etc.
         # Jooble removed — API links redirect through JobLeads/middlemen requiring sign-up
     ]
 
