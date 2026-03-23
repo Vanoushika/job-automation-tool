@@ -8,7 +8,6 @@ from .remotive_scraper import RemotiveScraper
 from .jobicy_scraper import JobicyScraper
 from .muse_scraper import MuseScraper
 from .adzuna_scraper import AdzunaScraper
-from .jooble_scraper import JoobleScraper
 from .greenhouse_scraper import GreenhouseScraper
 
 
@@ -58,7 +57,7 @@ class JobAggregator:
         JobicyScraper,
         MuseScraper,
         AdzunaScraper,      # W2/contract when ADZUNA_APP_ID + ADZUNA_APP_KEY are set
-        JoobleScraper,      # LinkedIn/Indeed/Glassdoor via Jooble when JOOBLE_API_KEY is set
+        # Jooble removed — API links redirect through JobLeads/middlemen requiring sign-up
     ]
 
     def fetch_all_raw(self) -> List[Dict]:
