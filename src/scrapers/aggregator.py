@@ -3,11 +3,13 @@ from datetime import datetime, timezone, timedelta
 from typing import List, Dict
 
 from .simplify_scraper import SimplifyScraper
+from .vanshb_scraper import VanshbScraper
 from .remotive_scraper import RemotiveScraper
 from .jobicy_scraper import JobicyScraper
 from .muse_scraper import MuseScraper
 from .adzuna_scraper import AdzunaScraper
 from .jooble_scraper import JoobleScraper
+from .greenhouse_scraper import GreenhouseScraper
 
 
 NON_US_SIGNALS = [
@@ -44,7 +46,9 @@ class JobAggregator:
     """
 
     SCRAPERS = [
-        SimplifyScraper,
+        SimplifyScraper,    # New-grad curated list (sponsorship-eligible only)
+        VanshbScraper,      # Vanshb 2026 new-grad list (sponsorship-eligible only)
+        GreenhouseScraper,  # Direct company job boards — jobs before they hit LinkedIn
         RemotiveScraper,
         JobicyScraper,
         MuseScraper,
