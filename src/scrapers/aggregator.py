@@ -88,22 +88,55 @@ class JobAggregator:
         return deduped
 
     def filter_tech_roles(self, jobs: List[Dict]) -> List[Dict]:
-        """Keep only software/tech roles. Removes fitness instructors, coordinators, etc."""
+        """Keep only software/tech roles. Removes medical techs, fitness, admin, etc."""
+
+        # Explicit block list — roles that contain these are never software jobs
+        BLOCKED_ROLE_SIGNALS = [
+            "radiology", "technologist", "radiologist", "eeg", "emg",
+            "phlebotom", "nursing", "nurse ", "clinical", "patient care",
+            "dental", "physician", "therapist", "medical assistant",
+            "surgical tech", "lab tech", "imaging tech", "ultrasound",
+            "x-ray", "mri tech", "ct tech", "pharmacy tech",
+            "fitness", "personal trainer", "yoga", "wellness coach",
+            "driver", "delivery driver", "warehouse", "forklift",
+            "accountant", "bookkeeper", "tax preparer",
+            "sales representative", "account executive", "sales manager",
+            "marketing coordinator", "social media manager",
+            "hr coordinator", "human resources", "recruiter",
+            "administrative assistant", "office coordinator",
+            "customer service representative",
+        ]
+
+        # Software/tech role keywords — specific enough to avoid false positives
         TECH_KEYWORDS = [
-            "engineer", "developer", "dev ", "dev,", "programmer", "software",
-            "frontend", "backend", "full stack", "fullstack", "full-stack",
-            "devops", "sre", "data ", "machine learning", " ml ", "deep learning",
-            "ai ", "cloud", "mobile", "ios", "android", "python", "java",
-            "javascript", "typescript", "react", "node", "web ", "api ",
-            "platform", "infrastructure", "security", "database", "analytics",
-            "qa ", "quality assurance", "automation", "architect", "scientist",
-            " tech", "computer science", "it ", "information technology",
-            "golang", "rust", "scala", "kubernetes", "docker", "aws", "azure",
+            "software engineer", "software developer", "software development",
+            "frontend engineer", "backend engineer", "full stack", "fullstack", "full-stack",
+            "web developer", "web engineer", "mobile developer", "mobile engineer",
+            "ios developer", "ios engineer", "android developer", "android engineer",
+            "devops engineer", "devops", "sre", "site reliability",
+            "data engineer", "data scientist", "data analyst",
+            "machine learning", "ml engineer", "ai engineer", "deep learning",
+            "cloud engineer", "platform engineer", "infrastructure engineer",
+            "security engineer", "database engineer", "analytics engineer",
+            "qa engineer", "quality assurance engineer", "test automation engineer",
+            "solutions architect", "software architect",
+            "developer", "programmer", "swe", "sde",
+            "python developer", "java developer", "react developer",
+            "node developer", "typescript developer", "javascript developer",
+            "computer science", "information technology",
+            "golang", "rust", "kubernetes engineer", "docker",
         ]
-        kept = [
-            j for j in jobs
-            if any(kw in (j.get("role") or "").lower() for kw in TECH_KEYWORDS)
-        ]
+
+        kept = []
+        for j in jobs:
+            role_lower = (j.get("role") or "").lower()
+            # Block clearly non-tech roles first
+            if any(b in role_lower for b in BLOCKED_ROLE_SIGNALS):
+                continue
+            # Then require at least one tech keyword
+            if any(kw in role_lower for kw in TECH_KEYWORDS):
+                kept.append(j)
+
         removed = len(jobs) - len(kept)
         if removed:
             print(f"[Aggregator] Removed {removed} non-tech roles → {len(kept)} remaining")
