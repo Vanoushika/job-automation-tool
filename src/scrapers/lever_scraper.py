@@ -125,7 +125,7 @@ class LeverScraper(BaseScraper):
                 return None  # Skip stale postings
         except Exception:
             pass
-        posted_date = None  # Hide timestamp like Greenhouse
+        # Lever createdAt is a real posting date — surface it so the UI shows "2h ago" etc.
 
         company_name = item.get("company") or company_slug.replace("-", " ").title()
 

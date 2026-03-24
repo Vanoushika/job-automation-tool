@@ -138,13 +138,15 @@ def run_pipeline(send_email: bool = True) -> list:
             job["first_seen"] = now_iso
 
         # is_new per source:
-        # - SimplifyJobs/Vanshb/Greenhouse: true only the FIRST time we ever see this job
-        #   (no real posting timestamp available)
-        # - Jooble/Adzuna/others: true if posted within last 24h (real timestamp)
-        CURATED_SOURCES = {"SimplifyJobs", "Greenhouse"}
-        if job.get("source") in CURATED_SOURCES:
+        # - SimplifyJobs: true only the FIRST time we see it (day-level date from age col)
+        # - Greenhouse: true only the FIRST time (updated_at is not a posting date)
+        # - Lever/Adzuna/others: true if posted within last 24h (real timestamp)
+        if job.get("source") == "Greenhouse":
             job["is_new"] = prev is None
-            job["posted_date"] = None  # no real timestamp — hide the clock
+            job["posted_date"] = None  # Greenhouse updated_at ≠ posting date — hide it
+        elif job.get("source") == "SimplifyJobs":
+            job["is_new"] = prev is None
+            # Keep posted_date (day-level from age column) — shows "Today" / "1 day ago"
         else:
             job["is_new"] = _is_recently_posted(job.get("posted_date", ""), hours=24)
 
