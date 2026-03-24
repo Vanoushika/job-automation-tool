@@ -53,7 +53,14 @@ class VanshbScraper(BaseScraper):
             company = company_link.get_text(strip=True) if company_link else raw_text
             company = re.sub(r"^[\U0001F300-\U0001FFFF\s🔥🛂🇺🇸🎓]+", "", company).strip()
 
-            role = cells[1].get_text(strip=True)
+            role_cell_text = cells[1].get_text(strip=True)
+            # 🔐 = citizenship/clearance required in role cell — skip
+            if "🔐" in role_cell_text:
+                return None
+            # 🇺🇸 = US citizenship required (sometimes appears in role cell too)
+            if "🇺🇸" in role_cell_text:
+                return None
+            role = role_cell_text
             if not role or role in ("Role", "Position"):
                 return None
             if "🔒" in role or "🔒" in company:

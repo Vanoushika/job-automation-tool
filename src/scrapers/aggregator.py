@@ -204,10 +204,17 @@ class JobAggregator:
         if phd_removed:
             print(f"[Aggregator] Removed {phd_removed} PhD/research-scientist jobs → {len(jobs)} remaining")
 
+        # Government/defense/federal role titles — likely to require clearance/citizenship
+        GOVERNMENT_ROLE_SIGNALS = [
+            "government ", "federal ", "defense ", "defence ",
+            "dod ", "dhs ", "doj ", "nsa ", "cia ", "fbi ",
+            "it consultant", "it specialist", "government it",
+        ]
         CLEARANCE_SIGNALS = [
             "security clearance", "clearance required", "active clearance",
             "secret clearance", "top secret", "ts/sci", "sci clearance",
             "dod clearance", "public trust clearance", "government clearance",
+            "🔐",  # SimplifyJobs clearance/citizenship flag in role cell
         ]
         CITIZENSHIP_SIGNALS = [
             "🇺🇸",  # SimplifyJobs citizenship flag
@@ -222,10 +229,13 @@ class JobAggregator:
             company = (job.get("company") or "").lower()
             desc = (job.get("description") or "").lower()
             combined = f"{role} {company} {desc}"
+            raw_role = job.get("role") or ""
 
+            if any(s in role for s in GOVERNMENT_ROLE_SIGNALS):
+                continue
             if any(s in combined for s in CLEARANCE_SIGNALS):
                 continue
-            if any(s in f"{job.get('role', '')} {job.get('company', '')} {desc}" for s in CITIZENSHIP_SIGNALS):
+            if any(s in f"{raw_role} {job.get('company', '')} {desc}" for s in CITIZENSHIP_SIGNALS):
                 continue
             kept.append(job)
 
