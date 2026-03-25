@@ -4,7 +4,7 @@ import StatsBar from './components/StatsBar'
 import FilterBar from './components/FilterBar'
 import JobCard from './components/JobCard'
 
-const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: true, roleType: 'all' }
+const DEFAULT_FILTERS = { tier: 'all', jobType: 'all', appliedOnly: false, hideApplied: false, search: '', postedWithin: 'all', sortBy: 'newest', newOnly: true, roleType: 'all' }
 
 const ROLE_TYPE_KEYWORDS = {
   swe:       ['software engineer', 'software developer', 'swe', 'software development'],
@@ -68,6 +68,7 @@ export default function App() {
     if (filters.tier !== 'all' && j.tier !== filters.tier) return false
     if (filters.jobType !== 'all' && j.job_type !== filters.jobType) return false
     if (filters.appliedOnly && !j.applied) return false
+    if (filters.hideApplied && j.applied) return false
     if (filters.search) {
       const q = filters.search.toLowerCase()
       if (!j.company?.toLowerCase().includes(q) && !j.role?.toLowerCase().includes(q)) return false

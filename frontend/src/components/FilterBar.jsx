@@ -137,7 +137,7 @@ export default function FilterBar({ filters, setFilters }) {
 
       {/* Applied toggle */}
       <button
-        onClick={() => setFilters(f => ({ ...f, appliedOnly: !f.appliedOnly }))}
+        onClick={() => setFilters(f => ({ ...f, appliedOnly: !f.appliedOnly, hideApplied: false }))}
         className={`px-3 py-1 rounded-lg text-sm font-medium border transition-all ${
           filters.appliedOnly
             ? 'bg-purple-500 text-white border-purple-500'
@@ -145,6 +145,18 @@ export default function FilterBar({ filters, setFilters }) {
         }`}
       >
         ✔ Applied Only
+      </button>
+
+      {/* Hide Applied toggle */}
+      <button
+        onClick={() => setFilters(f => ({ ...f, hideApplied: !f.hideApplied, appliedOnly: false }))}
+        className={`px-3 py-1 rounded-lg text-sm font-medium border transition-all ${
+          filters.hideApplied
+            ? 'bg-orange-500 text-white border-orange-500'
+            : 'text-gray-600 border-gray-300 hover:bg-gray-100'
+        }`}
+      >
+        ✕ Hide Applied
       </button>
 
       {/* Search */}
