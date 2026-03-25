@@ -4,6 +4,7 @@ from typing import List, Dict
 
 from .simplify_scraper import SimplifyScraper
 from .vanshb_scraper import VanshbScraper
+from .ambicuity_scraper import AmbicuityScraper
 from .remotive_scraper import RemotiveScraper
 from .jobicy_scraper import JobicyScraper
 from .muse_scraper import MuseScraper
@@ -53,6 +54,7 @@ class JobAggregator:
     SCRAPERS = [
         SimplifyScraper,    # New-grad curated list (sponsorship-eligible only)
         VanshbScraper,      # Vanshb 2026 new-grad list (sponsorship-eligible only)
+        AmbicuityScraper,   # Ambicuity new-grad list — 150+ company APIs, updates every 5 min
         GreenhouseScraper,  # Direct company job boards — jobs before they hit LinkedIn
         RemotiveScraper,
         JobicyScraper,
