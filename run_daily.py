@@ -97,7 +97,7 @@ def run_pipeline(send_email: bool = True) -> list:
                 fs = datetime.fromisoformat(prev.get("first_seen", now_iso))
                 if fs.tzinfo is None:
                     fs = fs.replace(tzinfo=timezone.utc)
-                max_age = timedelta(days=1) if job.get("source") == "SimplifyJobs" else timedelta(days=4)
+                max_age = timedelta(days=1)
                 if fs < now - max_age:
                     stale_count += 1
                     continue
