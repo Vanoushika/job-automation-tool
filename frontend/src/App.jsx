@@ -182,7 +182,7 @@ export default function App() {
           const simplifyJobs = jobsWithApplied.filter(j => j.source === 'SimplifyJobs')
           if (simplifyJobs.length === 0) return (
             <div className="mb-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 text-xs text-gray-500">
-              📋 No new SimplifyJobs listings today — showing Jooble &amp; Adzuna results only
+              📋 No new SimplifyJobs listings today — showing Greenhouse, Lever &amp; Adzuna results only
             </div>
           )
           return (
