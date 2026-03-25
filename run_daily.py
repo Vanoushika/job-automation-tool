@@ -150,18 +150,57 @@ def run_pipeline(send_email: bool = True) -> list:
         except Exception:
             job["is_new"] = prev is None
 
+    # ── Local jobs: Youngstown / Pittsburgh / Cleveland area ──────────────────
+    local_jobs = []
+    try:
+        from src.scrapers.adzuna_scraper import AdzunaScraper
+        adzuna = AdzunaScraper()
+        local_candidates = adzuna.fetch_local_jobs()
+        if local_candidates:
+            # Score all candidates against both resumes (no role filter)
+            for job in local_candidates:
+                desc = job.get("description", "") or job.get("role", "")
+                ai_score, fs_score = scorer.score(desc, resume_ai), scorer.score(desc, resume_fullstack)
+                job["ai_score"]   = round(ai_score * 100)
+                job["fs_score"]   = round(fs_score * 100)
+                job["best_score"] = max(job["ai_score"], job["fs_score"])
+                job["resume"]     = "AI Resume" if job["ai_score"] >= job["fs_score"] else "Full-Stack Resume"
+
+            # Sort by score, take top 10 with score >= 30%
+            local_candidates.sort(key=lambda j: j["best_score"], reverse=True)
+            local_jobs = [j for j in local_candidates if j["best_score"] >= 30][:10]
+
+        # Assign first_seen / is_new
+        for job in local_jobs:
+            prev = existing.get(job["id"])
+            job["first_seen"] = prev.get("first_seen", now_iso) if prev else now_iso
+            try:
+                fs_dt = datetime.fromisoformat(job["first_seen"])
+                if fs_dt.tzinfo is None:
+                    fs_dt = fs_dt.replace(tzinfo=timezone.utc)
+                job["is_new"] = (now - fs_dt).total_seconds() < 24 * 3600
+            except Exception:
+                job["is_new"] = True
+
+        count = len(local_jobs)
+        print(f"[Local] {count} local jobs found for Youngstown area" if count else "[Local] No local jobs found today")
+    except Exception as e:
+        print(f"[Local] Error: {e}")
+
+    all_jobs = top_jobs + local_jobs
+
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
-        json.dump(top_jobs, f, indent=2, default=str)
-    new_count = sum(1 for j in top_jobs if j.get("is_new"))
-    print(f"\n[Pipeline] Saved {len(top_jobs)} jobs ({new_count} new) to {output_path}")
+        json.dump(all_jobs, f, indent=2, default=str)
+    new_count = sum(1 for j in all_jobs if j.get("is_new"))
+    print(f"\n[Pipeline] Saved {len(all_jobs)} jobs ({new_count} new, {len(local_jobs)} local) to {output_path}")
 
     # Save to MongoDB (when MONGODB_URI is set)
     try:
         from src.database.db import JobDatabase
         db = JobDatabase()
         if db.connected:
-            saved = db.save_jobs(top_jobs)
+            saved = db.save_jobs(all_jobs)
             print(f"[Pipeline] Saved {saved} jobs to MongoDB")
 
     except Exception as e:
@@ -171,7 +210,7 @@ def run_pipeline(send_email: bool = True) -> list:
     if send_email:
         try:
             from src.utils.email_sender import send_daily_email
-            send_daily_email(top_jobs, NOTIFY_EMAIL)
+            send_daily_email(all_jobs, NOTIFY_EMAIL)
         except Exception as e:
             print(f"[Pipeline] Email failed: {e}")
 

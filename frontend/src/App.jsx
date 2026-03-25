@@ -63,8 +63,12 @@ export default function App() {
   // Merge localStorage applied status into jobs (survives Render restarts + refreshes)
   const jobsWithApplied = jobs.map(j => appliedIds.has(j.id) ? { ...j, applied: true } : j)
 
-  // Client-side filtering
-  let filtered = jobsWithApplied.filter(j => !hiddenIds.has(j.id)).filter(j => {
+  // Separate local jobs from main jobs
+  const localJobs = jobsWithApplied.filter(j => j.section === 'local' && !hiddenIds.has(j.id))
+  const mainJobs  = jobsWithApplied.filter(j => j.section !== 'local')
+
+  // Client-side filtering (main jobs only)
+  let filtered = mainJobs.filter(j => !hiddenIds.has(j.id)).filter(j => {
     if (filters.tier !== 'all' && j.tier !== filters.tier) return false
     if (filters.jobType !== 'all' && j.job_type !== filters.jobType) return false
     if (filters.appliedOnly && !j.applied) return false
@@ -270,8 +274,29 @@ export default function App() {
         {/* Footer */}
         {!loading && filtered.length > 0 && (
           <p className="text-center text-xs text-gray-400 py-4">
-            Showing {filtered.length} of {jobs.length} jobs
+            Showing {filtered.length} of {mainJobs.length} jobs
           </p>
+        )}
+
+        {/* Local Jobs Section */}
+        {!loading && (
+          <div className="mt-8 border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-bold text-gray-800">📍 Local Jobs — Youngstown / Pittsburgh / Cleveland</h2>
+              <span className="text-xs text-gray-400">Today only · Any role · Resume match</span>
+            </div>
+            {localJobs.length === 0 ? (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-4 text-sm text-gray-500 text-center">
+                Nothing found today in the Youngstown area.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {localJobs.map(job => (
+                  <JobCard key={job.id} job={job} onApplied={handleApplied} onHide={handleHide} />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </main>
     </div>
