@@ -137,18 +137,18 @@ def run_pipeline(send_email: bool = True) -> list:
         else:
             job["first_seen"] = now_iso
 
-        # is_new per source:
-        # - SimplifyJobs: true only the FIRST time we see it (day-level date from age col)
-        # - Greenhouse: true only the FIRST time (updated_at is not a posting date)
-        # - Lever/Adzuna/others: true if posted within last 24h (real timestamp)
+        # is_new: true if first_seen within the last 24 hours (consistent across all sources)
+        # This means: first hourly run that picks up a job → is_new=true
+        # Next day → is_new=false (already reviewed)
         if job.get("source") == "Greenhouse":
-            job["is_new"] = prev is None
             job["posted_date"] = None  # Greenhouse updated_at ≠ posting date — hide it
-        elif job.get("source") == "SimplifyJobs":
+        try:
+            fs_dt = datetime.fromisoformat(job["first_seen"])
+            if fs_dt.tzinfo is None:
+                fs_dt = fs_dt.replace(tzinfo=timezone.utc)
+            job["is_new"] = (now - fs_dt).total_seconds() < 24 * 3600
+        except Exception:
             job["is_new"] = prev is None
-            # Keep posted_date (day-level from age column) — shows "Today" / "1 day ago"
-        else:
-            job["is_new"] = _is_recently_posted(job.get("posted_date", ""), hours=24)
 
     output_path = Path("jobs_output.json")
     with open(output_path, "w") as f:
